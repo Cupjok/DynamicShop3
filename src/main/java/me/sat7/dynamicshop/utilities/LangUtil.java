@@ -758,7 +758,7 @@ public final class LangUtil
 
             ccLang.get().addDefault("QUICK_SELL_TITLE", "§3Quick Sell");
             ccLang.get().addDefault("QUICK_SELL.GUIDE_TITLE", "§3§lQuick Sell Guide");
-            ccLang.get().addDefault("QUICK_SELL.GUIDE_LORE", "§aLeft-click the item you want to sell.\n§aShift left click to sell all items of the same type.\n§aRight-click to go to the item shop.");
+            ccLang.get().addDefault("QUICK_SELL.GUIDE_LORE", "§aLeft-click to sell ALL items of this type in your inventory.\n§aShift left click to sell ONLY the stack you clicked.\n§aRight-click to go to the item shop.");
 
             ccLang.get().addDefault("ARROW.UP", "§a⬆");
             ccLang.get().addDefault("ARROW.DOWN", "§c⬇");

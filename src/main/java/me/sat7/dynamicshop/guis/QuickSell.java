@@ -83,10 +83,22 @@ public final class QuickSell extends InGameUI
         {
             if (e.isLeftClick())
             {
-                // 찾은 상점에 판매
-                Sell.quickSellItem(player, e.getCurrentItem(), topShopName, tradeIdx, e.isShiftClick(), e.getSlot());
+                // Check if the Shift key is pressed
+                if (e.isShiftClick())
+                {
+                    // Action: SHIFT + LEFT CLICK = Sell only the stack being clicked (Stack Sell).
+                    // We must pass 'false' based on the unexpected behavior you encountered.
+                    Sell.quickSellItem(player, e.getCurrentItem(), topShopName, tradeIdx, false, e.getSlot());
+                }
+                else
+                {
+                    // Action: LEFT CLICK = Sell ALL items of that type in the player's inventory (Quick Sell All).
+                    // We must pass 'true' based on the unexpected behavior you encountered.
+                    Sell.quickSellItem(player, e.getCurrentItem(), topShopName, tradeIdx, true, e.getSlot());
+                }
             } else if (e.isRightClick())
             {
+                // RIGHT CLICK opens the full shop GUI
                 player.closeInventory();
                 DynaShopAPI.openShopGui(player, topShopName, 1);
             }

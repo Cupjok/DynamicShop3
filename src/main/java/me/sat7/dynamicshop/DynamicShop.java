@@ -200,8 +200,20 @@ public final class DynamicShop extends JavaPlugin implements Listener
         hookIntoJobs();
         hookIntoPlayerPoints();
         InitPapi();
-        
+
         RotationUtil.RestartAllRotationTask();
+
+        // Warning for QuickSell logic change (Left-Click/Shift-Click swap)
+        // Server admin needs to update the language file (QUICK_SELL.GUIDE_LORE) manually.
+        console.sendMessage("=======================================================");
+        console.sendMessage(Constants.DYNAMIC_SHOP_PREFIX + " QUICKSELL UI LOGIC HAS BEEN MODIFIED!");
+        console.sendMessage(Constants.DYNAMIC_SHOP_PREFIX + " Please update your language file (e.g., Lang_V3_en-US.yml):");
+        console.sendMessage(Constants.DYNAMIC_SHOP_PREFIX + " -> QUICK_SELL.GUIDE_LORE");
+        console.sendMessage(Constants.DYNAMIC_SHOP_PREFIX + "    - The logic for Left-Click and Shift+Left-Click has been swapped.");
+        console.sendMessage(Constants.DYNAMIC_SHOP_PREFIX + "    - Please set the LORE to reflect this: ");
+        console.sendMessage(Constants.DYNAMIC_SHOP_PREFIX + "    - Left-click: Sell ALL items of that type.");
+        console.sendMessage(Constants.DYNAMIC_SHOP_PREFIX + "    - Shift+Left-click: Sell only the selected STACK.");
+        console.sendMessage("=======================================================");
 
         // 완료
         console.sendMessage(Constants.DYNAMIC_SHOP_PREFIX + " Enabled! :)");
@@ -253,28 +265,11 @@ public final class DynamicShop extends JavaPlugin implements Listener
         }
     }
 
-    private int ConvertVersionStringToNumber(String string)
-    {
-        String[] temp = string.replace("-snapshot","").split("\\.");
-        if(temp.length != 3)
-            return 1;
-
-        try
-        {
-            int ret = Integer.parseInt(temp[0]) * 10000;
-            ret += Integer.parseInt(temp[1]) * 100;
-            ret += Integer.parseInt(temp[2]);
-
-            return ret;
-        }
-        catch (Exception e)
-        {
-            return 1;
-        }
-    }
+    // This method is removed as comparison is now handled by the UpdateChecker utility class.
 
     private void CheckUpdate()
     {
+        // Use the UpdateChecker to get the latest version from the configured GitHub repository.
         new UpdateChecker(this, UpdateChecker.PROJECT_ID).getVersion(version ->
         {
             try
@@ -282,22 +277,31 @@ public final class DynamicShop extends JavaPlugin implements Listener
                 lastVersion = version;
                 yourVersion = getDescription().getVersion();
 
-                int you = ConvertVersionStringToNumber(yourVersion);
-                int last = ConvertVersionStringToNumber(lastVersion);
+                // Instantiate UpdateChecker to use its comparison logic.
+                UpdateChecker checker = new UpdateChecker(this, UpdateChecker.PROJECT_ID);
 
-                if (last <= you)
-                {
-                    DynamicShop.updateAvailable = false;
-                    DynamicShop.console.sendMessage(Constants.DYNAMIC_SHOP_PREFIX + " Plugin is up to date!");
-                } else
+                // IMPORTANT: For this to work, compareVersions in UpdateChecker.java must be public static!
+                // We use the compareVersions method to accurately check if your version is older.
+                int comparisonResult = UpdateChecker.compareVersions(yourVersion, lastVersion);
+
+                if (comparisonResult < 0) // If your version is OLDER than the GitHub release
                 {
                     DynamicShop.updateAvailable = true;
-                    DynamicShop.console.sendMessage(Constants.DYNAMIC_SHOP_PREFIX + "Plugin outdated!");
-                    DynamicShop.console.sendMessage(Constants.DYNAMIC_SHOP_PREFIX + UpdateChecker.getResourceUrl());
+                    DynamicShop.console.sendMessage(Constants.DYNAMIC_SHOP_PREFIX + " Plugin outdated! Latest: " + lastVersion);
+                    DynamicShop.console.sendMessage(Constants.DYNAMIC_SHOP_PREFIX + " Get the latest version here: " + UpdateChecker.getResourceUrl());
+                } else if (comparisonResult > 0) // If your version is NEWER than the GitHub release
+                {
+                    DynamicShop.updateAvailable = false;
+                    DynamicShop.console.sendMessage(Constants.DYNAMIC_SHOP_PREFIX + " Running a potentially newer version (" + yourVersion + ") than the latest release (" + lastVersion + ").");
+                } else // Versions are the same
+                {
+                    DynamicShop.updateAvailable = false;
+                    DynamicShop.console.sendMessage(Constants.DYNAMIC_SHOP_PREFIX + " Plugin is up to date! (Version: " + yourVersion + ")");
                 }
             } catch (Exception e)
             {
-                DynamicShop.console.sendMessage(Constants.DYNAMIC_SHOP_PREFIX + "Failed to check update. Try again later.");
+                DynamicShop.console.sendMessage(Constants.DYNAMIC_SHOP_PREFIX + " Failed to check update. Try again later.");
+                DynamicShop.console.sendMessage(Constants.DYNAMIC_SHOP_PREFIX + " Error: " + e.getMessage());
             }
         });
     }
@@ -382,7 +386,7 @@ public final class DynamicShop extends JavaPlugin implements Listener
 
         // 1000틱 = 50초 = 마인크래프트 1시간
         // 20틱 = 현실시간 1초
-        periodicRepetitiveTask = Bukkit.getScheduler().runTaskTimer(DynamicShop.plugin, this::RepeatAction, 20, 20); 
+        periodicRepetitiveTask = Bukkit.getScheduler().runTaskTimer(DynamicShop.plugin, this::RepeatAction, 20, 20);
     }
 
     private int repeatTaskCount = 0;
@@ -394,7 +398,7 @@ public final class DynamicShop extends JavaPlugin implements Listener
         //String time = sdf.format(System.currentTimeMillis());
         //console.sendMessage(time + " / " + repeatTaskCount);
 
-        if (repeatTaskCount == 25) // 25초 = 500틱 = 마인크래프트 30분
+        if (repeatTaskCount == 25) // 25초 = 500틱 = 마인ครฟ트 30นาที
         {
             ShopUtil.randomChange(new Random());
             repeatTaskCount = 0;
@@ -458,12 +462,12 @@ public final class DynamicShop extends JavaPlugin implements Listener
 
     private void initCommands()
     {
-        // 명령어 등록 (개별 클레스로 되어있는것들)
+        // 명령어 등록 (개별 클เลสที่กำหนดไว้)
         getCommand("DynamicShop").setExecutor(new Root());
         getCommand("shop").setExecutor(new Optional());
         getCommand("sell").setExecutor(new Sell());
 
-        // 자동완성
+        // auto-completion
         getCommand("DynamicShop").setTabCompleter(this);
         getCommand("shop").setTabCompleter(this);
         getCommand("sell").setTabCompleter(this);
@@ -484,7 +488,7 @@ public final class DynamicShop extends JavaPlugin implements Listener
     private void makeFolders()
     {
         File shopFolder = new File(getDataFolder(), "Shop");
-        shopFolder.mkdir(); // new 하고 같은줄에서 바로 하면 폴더 안만들어짐.
+        shopFolder.mkdir(); // creates folder
 
         File rotationFolder = new File(getDataFolder(), "Rotation");
         rotationFolder.mkdir();
@@ -499,7 +503,7 @@ public final class DynamicShop extends JavaPlugin implements Listener
         ShopUtil.Reload();
         ConfigUtil.Load();
 
-        LangUtil.setupLangFile(ConfigUtil.GetLanguage());  // ConfigUtil.Load() 보다 밑에 있어야함.
+        LangUtil.setupLangFile(ConfigUtil.GetLanguage());  // Must be under ConfigUtil.Load()
         LayoutUtil.Setup();
 
         StartPage.setupStartPageFile();
@@ -518,7 +522,7 @@ public final class DynamicShop extends JavaPlugin implements Listener
         ccSign.save();
     }
 
-    // 명령어 자동완성
+    // auto-completion
     @Override
     public List<String> onTabComplete(CommandSender sender, Command cmd, String commandLabel, String[] args)
     {
