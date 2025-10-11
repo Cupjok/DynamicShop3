@@ -1,4 +1,4 @@
-Supported Minecraft versions: 1.16.5 ~ 1.21.8
+Supported Minecraft versions: 1.16.5 ~ 1.21.10
 
 Using Java 21
 
