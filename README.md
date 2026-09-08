@@ -18,6 +18,10 @@ This fork (`Cupjok/DynamicShop3`) carries the following beyond the original upst
 - Dependency bumps: PlaceholderAPI, VaultAPI, LocaleLib, opencsv, Lombok.
 - Modernized CI (`.github/workflows/ds.yml`) — builds on the correct JDK and auto-publishes a GitHub Release with the built jar when a version tag is pushed.
 
+## Forking / continuing development with AI
+
+If you fork this repo and plan to keep working on it with Claude Code, Cursor, or any other AI coding tool, point that AI at **`CLAUDE.md`** first — it documents the architecture, the build quirks (including the Java 25 requirement above), the Folia scheduler conventions, and where things live in the codebase, so a new session doesn't have to rediscover it all. `HANDOFF.md` is a running log of what was in progress in the most recent work session, useful context if you're picking up right where it left off.
+
 Free version https://www.spigotmc.org/resources/65603/
 
 **Premium version** https://www.spigotmc.org/resources/100058/
