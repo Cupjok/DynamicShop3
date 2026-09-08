@@ -1,3 +1,5 @@
+[![Fork by Claude Code](https://img.shields.io/badge/fork%20by-Claude%20Code-D97757?style=flat-square)](https://claude.com/claude-code)
+
 Supported Minecraft versions: 1.16.5 - 26.2
 
 Runs on **Paper, Purpur, and Folia**.
