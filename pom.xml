@@ -6,7 +6,7 @@
 
     <groupId>me.sat7</groupId>
     <artifactId>DynamicShop</artifactId>
-    <version>3.21.7</version>
+    <version>3.22.0</version>
     <packaging>jar</packaging>
 
     <name>DynamicShop</name>
@@ -14,8 +14,10 @@
     <description>Full GUI shop with dynamic prices</description>
     <properties>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-        <maven.compiler.source>21</maven.compiler.source>
-        <maven.compiler.target>21</maven.compiler.target>
+        <!-- Paper 26.2's paper-api jar is compiled to Java 25 class files (major version 69);
+             a lower release here makes javac refuse to link against it ("bad class file ...
+             wrong version"). Build with a JDK 25+ toolchain. -->
+        <maven.compiler.release>25</maven.compiler.release>
     </properties>
 
     <build>
@@ -33,14 +35,22 @@
                 <artifactId>maven-compiler-plugin</artifactId>
                 <version>3.13.0</version>
                 <configuration>
-                    <source>21</source>
-                    <target>21</target>
+                    <!-- Newer JDKs (25+) disabled implicit annotation processing (auto-discovering
+                         processors on the classpath); Lombok must be wired in explicitly here or its
+                         @Getter/@Setter/etc. silently stop generating any methods. -->
+                    <annotationProcessorPaths>
+                        <path>
+                            <groupId>org.projectlombok</groupId>
+                            <artifactId>lombok</artifactId>
+                            <version>1.18.48</version>
+                        </path>
+                    </annotationProcessorPaths>
                 </configuration>
             </plugin>
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-shade-plugin</artifactId>
-                <version>3.6.0</version>
+                <version>3.6.2</version>
                 <configuration>
                     <minimizeJar>true</minimizeJar>
                     <relocations>
@@ -110,13 +120,13 @@
         <dependency>
             <groupId>io.papermc.paper</groupId>
             <artifactId>paper-api</artifactId>
-            <version>1.21.8-R0.1-SNAPSHOT</version>
+            <version>26.2.build.121-stable</version>
             <scope>provided</scope>
         </dependency>
         <dependency>
             <groupId>com.github.MilkBowl</groupId>
             <artifactId>VaultAPI</artifactId>
-            <version>1.7</version>
+            <version>1.7.1</version>
             <scope>provided</scope>
         </dependency>
         <dependency>
@@ -128,7 +138,7 @@
         <dependency>
             <groupId>com.opencsv</groupId>
             <artifactId>opencsv</artifactId>
-            <version>5.9</version>
+            <version>5.10</version>
         </dependency>
         <dependency>
             <groupId>commons-io</groupId>
@@ -138,12 +148,19 @@
         <dependency>
             <groupId>me.clip</groupId>
             <artifactId>placeholderapi</artifactId>
-            <version>2.11.6</version>
+            <version>2.12.3</version>
             <scope>provided</scope>
         </dependency>
         <dependency>
             <groupId>com.github.Zrips</groupId>
             <artifactId>Jobs</artifactId>
+            <!-- Newer tags (e.g. v5.2.6.3) ship a jitpack-generated POM with an invalid relative
+                 systemPath (de.keyle:mypet, me.arsmagica:pyrofishingpro) that Maven refuses to
+                 resolve outside Jobs' own build env - exclusions can't help since it fails at POM
+                 validation, before graph pruning. v5.2.2.3 is the newest tag with a clean POM; the
+                 Jobs Points API we compile against (JobsPlayer/PointsData) is stable across these
+                 releases, and this is provided/compile-only scope - the actual runtime jar on the
+                 server can still be newer. -->
             <version>v5.2.2.3</version>
             <scope>provided</scope>
         </dependency>
@@ -163,7 +180,7 @@
         <dependency>
             <groupId>com.github.PikaMug</groupId>
             <artifactId>LocaleLib</artifactId>
-            <version>4.1.0</version>
+            <version>4.1.5</version>
         </dependency>
         <dependency>
             <groupId>org.black_ixx</groupId>

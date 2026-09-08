@@ -1,11 +1,11 @@
 package me.sat7.dynamicshop.utilities;
 
+import io.papermc.paper.threadedregions.scheduler.ScheduledTask;
 import me.sat7.dynamicshop.DynamicShop;
 import me.sat7.dynamicshop.constants.Constants;
 import me.sat7.dynamicshop.files.CustomConfig;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.FilenameUtils;
-import org.bukkit.Bukkit;
 import org.bukkit.inventory.meta.ItemMeta;
 
 import java.io.File;
@@ -531,24 +531,34 @@ public final class RotationUtil
 
     // ===== [ Task ] =====
 
-    public static final ConcurrentHashMap<String, Integer> RotationTaskMap = new ConcurrentHashMap<>();
+    public static final ConcurrentHashMap<String, ScheduledTask> RotationTaskMap = new ConcurrentHashMap<>();
 
+    // Rotation only ever touches shop config files/data, never a Location/block, so
+    // it's safe (and correct) to drive it from the global region scheduler on Folia.
     public static void StartRotationTask(String shopName, long delay, long period)
     {
         StopRotationTask(shopName);
 
-        Integer i = Bukkit.getScheduler().runTaskTimer(DynamicShop.plugin, () -> ApplyNextRotation(shopName, period), delay, period).getTaskId();
-        RotationTaskMap.put(shopName, i);
+        ScheduledTask task = SchedulerUtil.runGlobalTimer(() -> ApplyNextRotation(shopName, period), delay, period);
+        RotationTaskMap.put(shopName, task);
 
         //DynamicShop.console.sendMessage("로테이션 시작됨: " + shopName + " / 딜레이: " + (delay / 20) + " / 간격: " + (period / 20));
     }
 
     private static void StopRotationTask(String shopName)
     {
-        if (RotationTaskMap.containsKey(shopName))
+        ScheduledTask task = RotationTaskMap.remove(shopName);
+        if (task != null)
         {
-            Bukkit.getScheduler().cancelTask(RotationTaskMap.get(shopName));
-            RotationTaskMap.remove(shopName);
+            task.cancel();
+        }
+    }
+
+    public static void CancelAllRotationTasks()
+    {
+        for (String shopName : RotationTaskMap.keySet())
+        {
+            StopRotationTask(shopName);
         }
     }
 

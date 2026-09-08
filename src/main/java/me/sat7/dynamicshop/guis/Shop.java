@@ -61,7 +61,7 @@ public final class Shop extends InGameUI
         }
         if (!PlayerpointHook.isPPActive && ShopUtil.GetCurrency(shopData).equalsIgnoreCase(Constants.S_PLAYERPOINT))
         {
-            player.sendMessage(DynamicShop.dsPrefix(player) + t(player, "ERR.PLAYER_POINT_NOT_FOUND"));
+            player.sendMessage(DynamicShop.dsPrefix(player) + t(player, "ERR.PLAYER_POINTS_NOT_FOUND"));
             return null;
         }
 

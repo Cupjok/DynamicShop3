@@ -1,24 +1,24 @@
 package me.sat7.dynamicshop.events;
 
+import io.papermc.paper.threadedregions.scheduler.ScheduledTask;
 import me.sat7.dynamicshop.DynamicShop;
 import me.sat7.dynamicshop.DynaShopAPI;
 import me.sat7.dynamicshop.files.CustomConfig;
 import me.sat7.dynamicshop.guis.StartPage;
+import me.sat7.dynamicshop.utilities.SchedulerUtil;
 import me.sat7.dynamicshop.utilities.ShopUtil;
 
 import me.sat7.dynamicshop.utilities.UserUtil;
-import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
 import org.bukkit.configuration.file.FileConfiguration;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
 import org.bukkit.event.player.AsyncPlayerChatEvent;
-import org.bukkit.scheduler.BukkitTask;
 
-import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
+import java.util.concurrent.ConcurrentHashMap;
 
 import static me.sat7.dynamicshop.utilities.LangUtil.t;
 import static me.sat7.dynamicshop.utilities.MathUtil.Clamp;
@@ -26,7 +26,7 @@ import static me.sat7.dynamicshop.utilities.MathUtil.Clamp;
 public class OnChat implements Listener
 {
 
-    private static final Map<UUID, Integer> runnableMap = new HashMap<>();
+    private static final Map<UUID, ScheduledTask> runnableMap = new ConcurrentHashMap<>();
 
     public static void WaitForInput(Player player)
     {
@@ -35,10 +35,14 @@ public class OnChat implements Listener
             cancelRunnable(player);
         }
 
-        BukkitTask taskID = Bukkit.getScheduler().runTaskLater(DynamicShop.plugin, () ->
+        // Player-bound timeout: touches this player's chat/UI state, so it must run on
+        // their own region thread on Folia rather than the global scheduler.
+        ScheduledTask taskID = SchedulerUtil.runForEntityDelayed(player, () ->
         {
             UUID uuid = player.getUniqueId();
             String userData = UserUtil.userTempData.get(uuid);
+            if (userData == null)
+                return;
 
             if (userData.contains("waitforPalette"))
             {
@@ -58,16 +62,26 @@ public class OnChat implements Listener
                 player.sendMessage(DynamicShop.dsPrefix(player) + t(player, "MESSAGE.INPUT_CANCELED"));
             }
 
-        }, 600);
-        runnableMap.put(player.getUniqueId(), taskID.getTaskId());
+        }, null, 600);
+        runnableMap.put(player.getUniqueId(), taskID);
     }
 
     private static void cancelRunnable(Player player)
     {
-        if (runnableMap.containsKey(player.getUniqueId()))
+        ScheduledTask task = runnableMap.remove(player.getUniqueId());
+        if (task != null)
         {
-            Bukkit.getScheduler().cancelTask(runnableMap.get(player.getUniqueId()));
+            task.cancel();
         }
+    }
+
+    public static void CancelAllTasks()
+    {
+        for (ScheduledTask task : runnableMap.values())
+        {
+            task.cancel();
+        }
+        runnableMap.clear();
     }
 
     @EventHandler

@@ -9,7 +9,6 @@ import org.bukkit.event.inventory.InventoryClickEvent;
 import org.bukkit.event.inventory.InventoryCloseEvent;
 import org.bukkit.event.inventory.InventoryOpenEvent;
 import org.bukkit.inventory.Inventory;
-import org.bukkit.scheduler.BukkitRunnable;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -47,16 +46,12 @@ public class UIManager implements Listener
 
     public static void Open(Player player, Inventory inventory, InGameUI inGameUI)
     {
-        new BukkitRunnable()
+        player.getScheduler().run(DynamicShop.plugin, t ->
         {
-            @Override
-            public void run()
-            {
-                player.openInventory(inventory); // 가장 먼저 불려야함. (버킷에서 새 인벤이 열릴때 기존의 것이 닫힘처리됨)
+            player.openInventory(inventory); // 가장 먼저 불려야함. (버킷에서 새 인벤이 열릴때 기존의 것이 닫힘처리됨)
 
-                currentUI.put(player, inGameUI);
-            }
-        }.runTask(DynamicShop.plugin);
+            currentUI.put(player, inGameUI);
+        }, null);
     }
 
     public static boolean IsPlayerUsingPluginGUI(Player player)
@@ -115,7 +110,10 @@ public class UIManager implements Listener
                 || ui.uiType == InGameUI.UI_TYPE.Shop
                 || ui.uiType == InGameUI.UI_TYPE.RotationEditor)
             {
-                ui.RefreshUI();
+                // Each player may live on a different region thread on Folia, so the
+                // refresh (which mutates that player's open inventory) must be
+                // dispatched on their own entity scheduler rather than run inline.
+                p.getScheduler().run(DynamicShop.plugin, t -> ui.RefreshUI(), null);
             }
         }
     }

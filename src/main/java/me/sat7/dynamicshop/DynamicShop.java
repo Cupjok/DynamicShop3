@@ -35,7 +35,7 @@ import org.bukkit.entity.Player;
 import org.bukkit.event.Listener;
 import org.bukkit.plugin.RegisteredServiceProvider;
 import org.bukkit.plugin.java.JavaPlugin;
-import org.bukkit.scheduler.BukkitTask;
+import io.papermc.paper.threadedregions.scheduler.ScheduledTask;
 
 import java.io.File;
 import java.util.*;
@@ -79,12 +79,12 @@ public final class DynamicShop extends JavaPlugin implements Listener
 
     public static CustomConfig ccSign = new CustomConfig();
 
-    private BukkitTask periodicRepetitiveTask;
-    private BukkitTask saveLogsTask;
-    private BukkitTask cullLogsTask;
-    private BukkitTask backupTask;
-    private BukkitTask shopSaveTask;
-    private BukkitTask userDataRepetitiveTask;
+    private ScheduledTask periodicRepetitiveTask;
+    private ScheduledTask saveLogsTask;
+    private ScheduledTask cullLogsTask;
+    private ScheduledTask backupTask;
+    private ScheduledTask shopSaveTask;
+    private ScheduledTask userDataRepetitiveTask;
 
     public static boolean updateAvailable = false;
     public static String lastVersion = "";
@@ -151,7 +151,7 @@ public final class DynamicShop extends JavaPlugin implements Listener
         console.sendMessage("---------------------");
 
         console.sendMessage("RotationTaskMap: size: " + RotationUtil.RotationTaskMap.size());
-        for(Map.Entry<String, Integer> entry : RotationUtil.RotationTaskMap.entrySet())
+        for(Map.Entry<String, ScheduledTask> entry : RotationUtil.RotationTaskMap.entrySet())
             console.sendMessage(entry.getKey() + ": " + entry.getValue());
 
         console.sendMessage("---------------------");
@@ -223,17 +223,20 @@ public final class DynamicShop extends JavaPlugin implements Listener
     }
 
     // 볼트 이코노미 초기화
+    // Vault-API-compatible providers (VaultUnlocked, CMIVault, etc.) may register the
+    // net.milkbowl.vault.economy.Economy service without a plugin literally named "Vault",
+    // so the presence check below is purely informational. SetupRSP()'s retry loop is the
+    // actual source of truth for whether a usable economy provider exists, and is the only
+    // path allowed to disable the plugin.
     private void SetupVault()
     {
-        if (getServer().getPluginManager().getPlugin("Vault") == null)
+        if (getServer().getPluginManager().getPlugin("Vault") != null)
         {
-            console.sendMessage(Constants.DYNAMIC_SHOP_PREFIX + " Disabled due to no Vault dependency found!");
-            getServer().getPluginManager().disablePlugin(this);
-            return;
+            console.sendMessage(Constants.DYNAMIC_SHOP_PREFIX + " 'Vault' Found");
         }
         else
         {
-            console.sendMessage(Constants.DYNAMIC_SHOP_PREFIX + " 'Vault' Found");
+            console.sendMessage(Constants.DYNAMIC_SHOP_PREFIX + " 'Vault' not found, looking for another Vault-compatible economy provider...");
         }
 
         SetupRSP();
@@ -251,7 +254,12 @@ public final class DynamicShop extends JavaPlugin implements Listener
         }
         else
         {
-            if(setupRspRetryCount >= 3)
+            // On a heavily-plugged server, some Vault-compatible providers (e.g. CMI's built-in
+            // economy) register the Economy service well after their own onEnable() returns -
+            // a short retry window here was observed to give up before that registration lands
+            // on busier servers, incorrectly disabling DynamicShop. 15 retries * 40 ticks (~2s
+            // each) gives ~30s of real startup time before concluding no provider exists.
+            if(setupRspRetryCount >= 15)
             {
                 console.sendMessage(Constants.DYNAMIC_SHOP_PREFIX + " Disabled due to no Vault dependency found!");
                 getServer().getPluginManager().disablePlugin(this);
@@ -259,9 +267,9 @@ public final class DynamicShop extends JavaPlugin implements Listener
             }
 
             setupRspRetryCount++;
-            //console.sendMessage(Constants.DYNAMIC_SHOP_PREFIX + " Economy provider not found. Retry... " + setupRspRetryCount + "/3");
+            //console.sendMessage(Constants.DYNAMIC_SHOP_PREFIX + " Economy provider not found. Retry... " + setupRspRetryCount + "/15");
 
-            Bukkit.getScheduler().runTaskLater(this, this::SetupRSP, 40L);
+            SchedulerUtil.runGlobalDelayed(this::SetupRSP, 40L);
         }
     }
 
@@ -349,7 +357,7 @@ public final class DynamicShop extends JavaPlugin implements Listener
             {
                 saveLogsTask.cancel();
             }
-            saveLogsTask = Bukkit.getScheduler().runTaskTimerAsynchronously(this, LogUtil::SaveLogToCSV, 0L, (20L * 10L));
+            saveLogsTask = SchedulerUtil.runAsyncTimer(LogUtil::SaveLogToCSV, 0L, (20L * 10L));
         }
     }
 
@@ -361,8 +369,8 @@ public final class DynamicShop extends JavaPlugin implements Listener
             {
                 cullLogsTask.cancel();
             }
-            cullLogsTask = Bukkit.getScheduler().runTaskTimerAsynchronously(
-                    this, LogUtil::cullLogs, 0L, (20L * 60L * (long) ConfigUtil.GetLogCullTimeMinutes())
+            cullLogsTask = SchedulerUtil.runAsyncTimer(
+                    LogUtil::cullLogs, 0L, (20L * 60L * (long) ConfigUtil.GetLogCullTimeMinutes())
             );
         }
     }
@@ -372,8 +380,8 @@ public final class DynamicShop extends JavaPlugin implements Listener
         if (userDataRepetitiveTask != null)
             userDataRepetitiveTask.cancel();
 
-        userDataRepetitiveTask = Bukkit.getScheduler().runTaskTimerAsynchronously(
-                this, UserUtil::RepetitiveTask, 0L, 20L * 60L * 60L
+        userDataRepetitiveTask = SchedulerUtil.runAsyncTimer(
+                UserUtil::RepetitiveTask, 0L, 20L * 60L * 60L
         );
     }
 
@@ -386,7 +394,7 @@ public final class DynamicShop extends JavaPlugin implements Listener
 
         // 1000틱 = 50초 = 마인크래프트 1시간
         // 20틱 = 현실시간 1초
-        periodicRepetitiveTask = Bukkit.getScheduler().runTaskTimer(DynamicShop.plugin, this::RepeatAction, 20, 20);
+        periodicRepetitiveTask = SchedulerUtil.runGlobalTimer(this::RepeatAction, 20, 20);
     }
 
     private int repeatTaskCount = 0;
@@ -416,7 +424,7 @@ public final class DynamicShop extends JavaPlugin implements Listener
             backupTask.cancel();
         }
         long interval = (20L * 60L * (long) ConfigUtil.GetShopYmlBackup_IntervalMinutes());
-        backupTask = Bukkit.getScheduler().runTaskTimer(DynamicShop.plugin, ShopUtil::ShopYMLBackup, interval, interval);
+        backupTask = SchedulerUtil.runGlobalTimer(ShopUtil::ShopYMLBackup, interval, interval);
     }
 
     public void StartShopSaveTask()
@@ -427,7 +435,7 @@ public final class DynamicShop extends JavaPlugin implements Listener
         }
 
         long interval = (20L * 10L);
-        shopSaveTask = Bukkit.getScheduler().runTaskTimer(DynamicShop.plugin, ShopUtil::SaveDirtyShop, interval, interval);
+        shopSaveTask = SchedulerUtil.runGlobalTimer(ShopUtil::SaveDirtyShop, interval, interval);
     }
 
     private void hookIntoJobs()
@@ -538,7 +546,23 @@ public final class DynamicShop extends JavaPlugin implements Listener
             ShopUtil.ForceSaveAllShop();
         }
 
-        Bukkit.getScheduler().cancelTasks(this);
+        cancelIfNotNull(periodicRepetitiveTask);
+        cancelIfNotNull(saveLogsTask);
+        cancelIfNotNull(cullLogsTask);
+        cancelIfNotNull(backupTask);
+        cancelIfNotNull(shopSaveTask);
+        cancelIfNotNull(userDataRepetitiveTask);
+        RotationUtil.CancelAllRotationTasks();
+        OnChat.CancelAllTasks();
+        Bukkit.getGlobalRegionScheduler().cancelTasks(this);
+        Bukkit.getAsyncScheduler().cancelTasks(this);
+
         console.sendMessage(Constants.DYNAMIC_SHOP_PREFIX + " Disabled");
+    }
+
+    private static void cancelIfNotNull(ScheduledTask task)
+    {
+        if (task != null)
+            task.cancel();
     }
 }

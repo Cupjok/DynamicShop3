@@ -5,6 +5,7 @@ import me.sat7.dynamicshop.DynamicShop;
 import me.sat7.dynamicshop.utilities.ItemsUtil;
 import me.sat7.dynamicshop.utilities.LogUtil;
 import me.sat7.dynamicshop.utilities.MathUtil;
+import me.sat7.dynamicshop.utilities.SchedulerUtil;
 import org.bukkit.Bukkit;
 import org.bukkit.Material;
 import org.bukkit.entity.Player;
@@ -210,7 +211,7 @@ public class LogViewer extends InGameUI
 
                 int finalSlotIdx = slotIdx;
                 Player finalP = p;
-                Bukkit.getScheduler().runTaskAsynchronously(DynamicShop.plugin, () -> LoadAndSetSkin(finalP, finalSlotIdx));
+                SchedulerUtil.runAsync(() -> LoadAndSetSkin(finalP, finalSlotIdx));
             }
 
             idx++;
@@ -233,7 +234,10 @@ public class LogViewer extends InGameUI
         }
 
         tempIs.setItemMeta(meta);
-        inventory.setItem(idx, tempIs);
+
+        // Mutating the open inventory must happen on the viewing player's own region
+        // thread on Folia; the (potentially network-bound) profile lookup above stays async.
+        SchedulerUtil.runForEntity(p, () -> inventory.setItem(idx, tempIs), null);
     }
 
     @Override

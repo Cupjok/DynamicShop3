@@ -3,6 +3,7 @@ name: DynamicShop
 on:
   push:
     branches: [ master ]
+    tags: [ '*' ]
   pull_request:
     branches: [ master ]
 
@@ -12,17 +13,39 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-    - uses: actions/checkout@v3.3.0 #https://github.com/actions/checkout/releases
-    - run: sed "s/{BUILDID}/$GITHUB_RUN_NUMBER/g" pom.xml > _pom.xml; rm pom.xml; mv _pom.xml pom.xml
-    - name: Set up JDK 8
-      uses: actions/setup-java@v3.9.0 #https://github.com/actions/setup-java/releases
+    - uses: actions/checkout@v4 #https://github.com/actions/checkout/releases
+    - name: Set up JDK 25
+      uses: actions/setup-java@v4 #https://github.com/actions/setup-java/releases
       with:
         distribution: 'temurin'
-        java-version: 8
+        java-version: 25
+        cache: maven
     - name: Build with Maven
-      run: mvn clean install
-    - run: mkdir staging && cp target/*.jar staging
-    - uses: actions/upload-artifact@v3.1.2 #https://github.com/actions/upload-artifact/releases
+      run: mvn -B clean package
+    - run: mkdir staging && cp target/DynamicShop-*.jar staging
+    - uses: actions/upload-artifact@v4 #https://github.com/actions/upload-artifact/releases
       with:
         name: Package
         path: staging
+
+  release:
+    needs: build
+    if: github.event_name == 'push' && startsWith(github.ref, 'refs/tags/')
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+    - uses: actions/checkout@v4
+    - name: Set up JDK 25
+      uses: actions/setup-java@v4
+      with:
+        distribution: 'temurin'
+        java-version: 25
+        cache: maven
+    - name: Build with Maven
+      run: mvn -B clean package
+    - name: Create GitHub release
+      uses: softprops/action-gh-release@v2
+      with:
+        files: target/DynamicShop-*.jar
+        generate_release_notes: true

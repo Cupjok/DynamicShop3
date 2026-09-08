@@ -1,6 +1,6 @@
 package me.sat7.dynamicshop;
 
-import org.bukkit.Bukkit;
+import me.sat7.dynamicshop.utilities.SchedulerUtil;
 import org.bukkit.plugin.java.JavaPlugin;
 
 import java.io.BufferedReader;
@@ -41,7 +41,7 @@ public class UpdateChecker
      */
     public void getVersion(final Consumer<String> consumer)
     {
-        Bukkit.getScheduler().runTaskAsynchronously(this.plugin, () ->
+        SchedulerUtil.runAsync(() ->
         {
             try {
                 URL url = new URL(GITHUB_RELEASES_URL);

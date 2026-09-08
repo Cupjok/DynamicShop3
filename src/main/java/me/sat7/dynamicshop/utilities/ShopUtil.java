@@ -9,7 +9,6 @@ import lombok.NonNull;
 import me.sat7.dynamicshop.models.DSItem;
 import me.sat7.dynamicshop.transactions.Calc;
 import org.apache.commons.io.FileUtils;
-import org.bukkit.Bukkit;
 import org.bukkit.Location;
 import org.bukkit.command.CommandSender;
 import org.bukkit.configuration.ConfigurationSection;
@@ -803,7 +802,7 @@ public final class ShopUtil
     public static void closeInventoryWithDelay(Player player)
     {
         //todo 왜 이렇게 만들었을까??? 2틱 딜레이가 필요한 이유가 뭐지?
-        Bukkit.getScheduler().runTaskLater(DynamicShop.plugin, () -> player.closeInventory(), 2);
+        SchedulerUtil.runForEntityDelayed(player, player::closeInventory, null, 2);
     }
 
     public static void SetToRecommendedValueAll(String shop, CommandSender sender)

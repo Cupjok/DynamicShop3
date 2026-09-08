@@ -5,8 +5,8 @@ import me.sat7.dynamicshop.DynamicShop;
 import me.sat7.dynamicshop.files.CustomConfig;
 import me.sat7.dynamicshop.utilities.ConfigUtil;
 import me.sat7.dynamicshop.utilities.ItemsUtil;
+import me.sat7.dynamicshop.utilities.SchedulerUtil;
 import me.sat7.dynamicshop.utilities.ShopUtil;
-import org.apache.commons.lang.ArrayUtils;
 import org.bukkit.Bukkit;
 import org.bukkit.Material;
 import org.bukkit.entity.Player;
@@ -210,7 +210,9 @@ public class StockSimulator extends InGameUI
         {
             if (e.isLeftClick())
             {
-                Bukkit.getScheduler().runTaskAsynchronously(DynamicShop.plugin, this::RunSimulation);
+                // RunSimulation mutates this player's open inventory throughout (not just at
+                // the end), so it must run on their own region thread, not the async pool.
+                SchedulerUtil.runForEntity(player, this::RunSimulation, null);
             } else if (e.isRightClick())
             {
                 ApplySettings();
@@ -404,7 +406,16 @@ public class StockSimulator extends InGameUI
                     stock = ShopUtil.StockStabilizing(useLegacyStockStabilization, generator, stock, median, stableStrength);
                 }
 
-                if (ArrayUtils.contains(time, i))
+                boolean isTimeMarker = false;
+                for (int timeMarker : time)
+                {
+                    if (timeMarker == i)
+                    {
+                        isTimeMarker = true;
+                        break;
+                    }
+                }
+                if (isTimeMarker)
                 {
                     String temp;
                     if(i == 48)

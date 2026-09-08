@@ -57,7 +57,15 @@ public final class JobsHook
     // JobsReborn. 플레이어의 잔액 확인
     public static double getCurJobPoints(Player p)
     {
+        // Jobs may go away after a shop's UI was already opened (plugin disabled/crashed
+        // mid-session); fail safe instead of NPE-ing the caller (e.g. periodic UI refresh).
+        if (!jobsRebornActive)
+            return 0.0;
+
         JobsPlayer jobsPlayer = Jobs.getPlayerManager().getJobsPlayer(p);
+        if (jobsPlayer == null)
+            return 0.0;
+
         return jobsPlayer.getPointsData().getCurrentPoints();
     }
 

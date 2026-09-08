@@ -94,12 +94,13 @@ public final class LogUtil
                     directory.mkdir();
                 }
 
-                CSVWriter csvWriter = new CSVWriter(new FileWriter(entry.getKey(), true));
-                for (String data : entry.getValue())
+                try (CSVWriter csvWriter = new CSVWriter(new FileWriter(entry.getKey(), true)))
                 {
-                    csvWriter.writeNext(data.split(","));
+                    for (String data : entry.getValue())
+                    {
+                        csvWriter.writeNext(data.split(","));
+                    }
                 }
-                csvWriter.close();
 
                 log.remove(entry.getKey());
             } catch (IOException e)
@@ -113,9 +114,8 @@ public final class LogUtil
     {
         ArrayList<String> resultArray = new ArrayList<>();
 
-        try
+        try (CSVReader reader = new CSVReader(new FileReader(DynamicShop.plugin.getDataFolder() + "/Log/" + shopName + "/" + selectedFileName)))
         {
-            CSVReader reader = new CSVReader(new FileReader(DynamicShop.plugin.getDataFolder() + "/Log/" + shopName + "/" + selectedFileName));
             List<String[]> data = reader.readAll();
 
             for (int i = data.size() - 1; i >= 0; i--)
