@@ -101,20 +101,13 @@ On Paper/Purpur (non-Folia) these all behave like the old main-thread/async sche
 ## Conventions already in the codebase (follow them, don't fight them)
 
 - PascalCase method names are the existing house style in large swaths of this codebase (`GetCurrency`, `RefreshUI`, `SetupVault`) even though it's not idiomatic Java — match the surrounding file rather than converting to camelCase piecemeal.
-- Comments mix Korean and English; the maintainer is Thai/Thailand-based but the original codebase is Korean-authored — don't strip or "clean up" existing Korean comments, and it's fine to write new comments in English.
+- Comments mix Korean and English (the original codebase is Korean-authored) — don't strip or "clean up" existing Korean comments, and it's fine to write new comments in English.
 - `CustomConfig` + `addDefault(...)` + `copyDefaults(true)` + `.save()` is the standard pattern for anything YAML-backed (config, lang, shop data, worth data). Follow it for new config keys instead of hand-rolling file I/O.
 - Lombok `@Getter`/`@Setter` on model classes (`DSItem`) — if `mvn compile` can't find a getter that's clearly annotated, it's the offline/annotation-processor issue above, not a missing method.
 
-## Test servers available locally
+## Test servers (local dev machine only, not part of this repo)
 
-Real Paper/Purpur/Folia server installs for manual smoke-testing live outside this repo at:
-`/Users/cupjok/Projects/Active/Minecraft server/`
-- `Survival SMP Paper 26.2 test`
-- `Survival SMP Purpur 26.2 test`
-- `Survival SMP Purpur 26.2 Optimize`
-- `Survival SMP Folia 26.2 test` (Folia via the Canvas fork, `canvas.jar`)
-
-Each has its own `plugins/` folder — drop the built jar in, start with the server's own `run.sh`/`cmd.sh`/`start-bg.sh` (check what each folder provides; not all are identical), and check `logs/latest.log` for enable/disable errors. These already run a realistic plugin set (LuckPerms, WorldGuard, CMI, PlaceholderAPI, etc.) so they're a decent proxy for "does this break on a real modpack-ish server," not just a bare-bones test instance.
+On the machine this was originally developed on, real Paper/Purpur/Folia server installs live in a sibling directory outside the repo (not checked in — this won't exist on a fresh clone or a different machine/fork). If you have similar local test servers, each typically has its own `plugins/` folder — drop the built jar in, start with the server's own `run.sh`/`cmd.sh`/`start-bg.sh` (scripts vary per server), and check `logs/latest.log` (or the equivalent console log) for enable/disable errors. Testing against a realistic plugin set (LuckPerms, WorldGuard, CMI, PlaceholderAPI, an actual Vault-compatible economy provider, etc.) is a much better signal than a bare-bones test instance — in particular, Vault-hook and Folia-scheduler changes should be verified against a real Jobs/economy plugin and a real Folia (or Folia-fork, e.g. Canvas) server before assuming they work.
 
 ## Where to look for more detail
 
