@@ -1,4 +1,4 @@
-[![Fork by Claude Code](https://img.shields.io/badge/fork%20by-Claude%20Code-D97757?style=flat-square)](https://claude.com/claude-code)
+[![Fork with Claude Code](https://img.shields.io/badge/Fork%20with-Claude%20Code-D97757?logo=claudecode&logoColor=white)](https://claude.com/claude-code)
 
 Supported Minecraft versions: 1.16.5 - 26.2
 
