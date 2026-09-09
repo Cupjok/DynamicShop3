@@ -81,3 +81,11 @@ Feature request (user's words): when you place a decoration item into a shop in 
 ### Verified
 - `mvn clean package` succeeds on JDK 25 (`target/DynamicShop-3.22.0.jar`), unit tests pass.
 - **Not** verified in-game (no Minecraft client in this environment): the actual toggle click, the two tooltip appearances, and rotation round-tripping of a deco item with custom meta. Worth a manual pass on a local test server before releasing.
+
+### Release process, written down (2026-09-09)
+User feedback after the 3.23.0 release: the GitHub Release body was just the auto-generated `**Full Changelog**: ...` link, which is useless to a server owner deciding whether to update. Every release needs a real written summary of what changed and what it means for them.
+
+- The 3.23.0 release notes were rewritten in place (`gh release edit`) with a proper summary.
+- `RELEASE_NOTES.md` (repo root) is now the body for the *next* release; `.github/workflows/ds.yml`'s release job passes it as `body_path` and still appends the auto-generated commit changelog underneath.
+- The full release sequence and what the notes must cover is documented in the new "Releasing" section of `CLAUDE.md` (mirrored into `AGENTS.md`).
+- **Rewrite `RELEASE_NOTES.md` as part of the change, before tagging** — if it's left stale, the next release ships the previous version's notes.

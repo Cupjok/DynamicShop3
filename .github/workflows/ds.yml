@@ -49,4 +49,7 @@ jobs:
       uses: softprops/action-gh-release@v2
       with:
         files: target/DynamicShop-*.jar
+        # RELEASE_NOTES.md is the hand-written summary for this release; the
+        # auto-generated commit changelog gets appended below it.
+        body_path: RELEASE_NOTES.md
         generate_release_notes: true

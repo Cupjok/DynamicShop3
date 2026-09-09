@@ -1,6 +1,6 @@
-# CLAUDE.md
+# AGENTS.md
 
-Guidance for Claude Code (or any future agent/session) working in this repo. Read this first, then `HANDOFF.md` for what's in flight right now.
+Guidance for Codex (or any future agent/session) working in this repo. Read this first, then `HANDOFF.md` for what's in flight right now.
 
 ## What this is
 
