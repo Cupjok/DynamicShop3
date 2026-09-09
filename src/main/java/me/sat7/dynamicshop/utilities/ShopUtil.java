@@ -313,6 +313,9 @@ public final class ShopUtil
                 data.get().set(idx + ".itemStack", null);
             }
 
+            // 슬롯을 새로 채우는 것이므로 이전 장식탬의 표시 설정은 지움
+            data.get().set(idx + ".showMeta", null);
+
             if (dsItem.buyValue > 0)
             {
                 data.get().set(idx + ".value", dsItem.buyValue);

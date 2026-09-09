@@ -74,6 +74,7 @@ public final class RotationUtil
                 else
                 {
                     rotationData.get().set(s + ".type", "deco");
+                    rotationData.get().set(s + ".showMeta", shopData.get().get(s + ".showMeta"));
                 }
             } catch (Exception ignore)
             {
@@ -324,6 +325,7 @@ public final class RotationUtil
             else
             {
                 rotationData.get().set(tradeIdx + ".type", "deco");
+                rotationData.get().set(tradeIdx + ".showMeta", shopData.get().get(tradeIdx + ".showMeta"));
             }
         } else
         {
@@ -497,6 +499,8 @@ public final class RotationUtil
                 } else
                 {
                     shopData.get().set(slotIndex + ".mat", rotationData.get().get(slotIndex + ".mat"));
+                    shopData.get().set(slotIndex + ".itemStack", rotationData.get().get(slotIndex + ".itemStack"));
+                    shopData.get().set(slotIndex + ".showMeta", rotationData.get().get(slotIndex + ".showMeta"));
                 }
             } catch (Exception ignore)
             {

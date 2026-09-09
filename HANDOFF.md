@@ -61,3 +61,23 @@ mvn clean package
 Pushing the `3.22.0` tag did not auto-trigger the CI workflow at first, even though `push`/`tags` triggers were configured correctly and `repos/.../actions/permissions` reported `enabled: true`. Diagnosed by adding a `workflow_dispatch:` trigger and manually running it (`gh workflow run ds.yml --ref master`) — that run succeeded end-to-end on JDK 25 in ~50s, proving the workflow itself was correct. Root cause: the repo is a **fork** of `Telesphoreo/DynamicShop3`, and GitHub disables automatic push/PR-triggered Action runs on forks until the owner manually clicks through a one-time consent in the web UI (Actions tab → "I understand my workflows, go ahead and enable them") — no API/`gh` CLI way to do that for someone. The user has since enabled it themselves. If a future push/tag still doesn't trigger a run, re-check `gh api repos/Cupjok/DynamicShop3/actions/runs` for an `event: push` entry to confirm before assuming it's broken again.
 
 Everything the user asked for in this session is done: MC 26.2 upgrade, Folia support (+Paper/Purpur), Jobs Reborn points hook fixed, Vault-fork compatibility (VaultUnlocked/CMIVault), bug sweep, README updated, tested on all 4 local servers, committed, pushed, tagged, and released.
+
+---
+
+## Session 2026-09-09: decoration items can show their own name/lore
+
+Feature request (user's words): when you place a decoration item into a shop in admin edit mode (left-click an empty slot → right-click an item in your own inventory), there should be a choice whether that item's name and lore are displayed. If chosen, its NBT (name/lore/enchants/etc.) shows normally; if not, the plugin's original behavior (blank name, everything hidden) applies.
+
+### What was implemented
+- New per-slot key in the shop yml: `<slot>.showMeta: true`. Absent = old behavior (hidden), so **every existing shop is unchanged by default**.
+- `guis/Shop.java`
+  - `ShowItems()` deco branch: when `showMeta` is set, the item's stored `ItemMeta` is used as-is (no forced `" "` display name, no `HIDE_ATTRIBUTES`/`HIDE_ENCHANTS`/`HIDE_ADDITIONAL_TOOLTIP` flags) and its own lore is kept, with the admin-only hint lines appended below it. When unset, the original code path runs untouched.
+  - `OnClickItemSlot()`: **left-click on a decoration item** (admin, `dynamicshop.admin.shop.edit`) toggles the flag, saves, syncs rotation data, messages the player, and refreshes the UI. Left-click on a *tradable* item still opens the trade GUI (that branch is checked first), and left-click on a deco previously did nothing at all, so no existing interaction was taken over.
+  - The item's tooltip carries the hint line (`SHOP.DECO_SHOW_META_LORE` / `SHOP.DECO_HIDE_META_LORE`) so the toggle is discoverable in-GUI without docs.
+- `utilities/LangUtil.java` — 4 new keys in **both** `ko-KR` and `en-US` blocks: `SHOP.DECO_SHOW_META_LORE`, `SHOP.DECO_HIDE_META_LORE`, `MESSAGE.DECO_META_SHOWN`, `MESSAGE.DECO_META_HIDDEN`.
+- `utilities/ShopUtil.java` — `addItemToShop()` clears `showMeta` when (re)filling a slot, so a new item never inherits the previous occupant's display setting.
+- `utilities/RotationUtil.java` — `showMeta` is written into rotation data (`CreateRotationDataFromCurrentShop`, `UpdateCurrentRotationData`) and restored in `ApplyRotation`. **Also fixed a pre-existing quirk found here**: `ApplyRotation` restored only `.mat` for deco entries and silently dropped `.itemStack`, so decoration items lost all their metadata (custom name, lore, potion type, ...) on every rotation. It now restores `.itemStack` too — required for this feature to survive a rotation, and a fix in its own right.
+
+### Verified
+- `mvn clean package` succeeds on JDK 25 (`target/DynamicShop-3.22.0.jar`), unit tests pass.
+- **Not** verified in-game (no Minecraft client in this environment): the actual toggle click, the two tooltip appearances, and rotation round-tripping of a deco item with custom meta. Worth a manual pass on a local test server before releasing.

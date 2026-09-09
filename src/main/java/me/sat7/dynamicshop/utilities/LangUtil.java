@@ -83,6 +83,8 @@ public final class LangUtil
             ccLang.get().addDefault("SHOP.ITEM_COPY_LORE", "§e우클릭: 복사");
             ccLang.get().addDefault("SHOP.ITEM_EDIT_LORE", "§eShift우클릭: 편집");
             ccLang.get().addDefault("SHOP.DECO_DELETE_LORE", "§eShift우클릭: 삭제");
+            ccLang.get().addDefault("SHOP.DECO_SHOW_META_LORE", "§e좌클릭: 이름/설명 표시하기");
+            ccLang.get().addDefault("SHOP.DECO_HIDE_META_LORE", "§e좌클릭: 이름/설명 숨기기");
             ccLang.get().addDefault("SHOP.PAGE_TITLE", "§f{curPage}/{maxPage} 페이지");
             ccLang.get().addDefault("SHOP.PAGE_LORE_V2", "§f§n좌클릭: 이전 페이지\n§f§n우클릭: 다음 페이지\n§7인벤토리에서 아이템을 클릭하면 \n§7그 아이템이 있는 페이지로 이동합니다.");
             ccLang.get().addDefault("SHOP.GO_TO_PAGE_EDITOR", "§eShift+우: 페이지 에디터");
@@ -371,6 +373,8 @@ public final class LangUtil
             ccLang.get().addDefault("MESSAGE.INVENTORY_FULL", "§4인벤토리에 빈 공간이 없습니다!");
             ccLang.get().addDefault("MESSAGE.IRREVERSIBLE", "§f이 행동은 되돌릴 수 없습니다!");
             ccLang.get().addDefault("MESSAGE.ITEM_ADDED", "아이템 추가됨!");
+            ccLang.get().addDefault("MESSAGE.DECO_META_SHOWN", "장식 아이템의 이름과 설명을 표시합니다.");
+            ccLang.get().addDefault("MESSAGE.DECO_META_HIDDEN", "장식 아이템의 이름과 설명을 숨깁니다.");
             ccLang.get().addDefault("MESSAGE.ITEM_UPDATED", "아이템 수정됨!");
             ccLang.get().addDefault("MESSAGE.ITEM_DELETED", "아이템 제거됨!");
             ccLang.get().addDefault("MESSAGE.CHANGES_APPLIED", "변경사항 적용됨. 새로운 값: ");
@@ -532,6 +536,8 @@ public final class LangUtil
             ccLang.get().addDefault("SHOP.ITEM_COPY_LORE", "§eRMB: Copy");
             ccLang.get().addDefault("SHOP.ITEM_EDIT_LORE", "§eShiftRMB: Edit");
             ccLang.get().addDefault("SHOP.DECO_DELETE_LORE", "§eShiftRMB: Remove");
+            ccLang.get().addDefault("SHOP.DECO_SHOW_META_LORE", "§eLMB: Show name & lore");
+            ccLang.get().addDefault("SHOP.DECO_HIDE_META_LORE", "§eLMB: Hide name & lore");
             ccLang.get().addDefault("SHOP.PAGE_TITLE", "§f{curPage}/{maxPage} Page");
             ccLang.get().addDefault("SHOP.PAGE_LORE_V2", "§f§nLMB: Previous page\n§f§nRMB: Next page\n§7Clicking on your item will\n§7take you to the page where\n§7that item is located.");
             ccLang.get().addDefault("SHOP.GO_TO_PAGE_EDITOR", "§eShift RMB: Page Editor");
@@ -819,6 +825,8 @@ public final class LangUtil
             ccLang.get().addDefault("MESSAGE.INVENTORY_FULL", "§4There are no empty spaces in your inventory!");
             ccLang.get().addDefault("MESSAGE.IRREVERSIBLE", "§fThis action is irreversible!");
             ccLang.get().addDefault("MESSAGE.ITEM_ADDED", "Item added!");
+            ccLang.get().addDefault("MESSAGE.DECO_META_SHOWN", "This decoration now shows its own name and lore.");
+            ccLang.get().addDefault("MESSAGE.DECO_META_HIDDEN", "This decoration no longer shows its name and lore.");
             ccLang.get().addDefault("MESSAGE.ITEM_UPDATED", "Item updated!");
             ccLang.get().addDefault("MESSAGE.ITEM_DELETED", "Item deleted!");
             ccLang.get().addDefault("MESSAGE.CHANGES_APPLIED", "Changes applied. New values:");

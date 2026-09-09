@@ -149,6 +149,7 @@ public final class Shop extends InGameUI
                 // 커스텀 메타 설정
                 ItemMeta meta = itemStack.getItemMeta();
                 String lore = "";
+                boolean keepOwnLore = false; // 장식탬이 자기 이름/설명을 그대로 쓰는 경우
 
                 // 상품
                 if (shopData.contains(s + ".value"))
@@ -348,19 +349,39 @@ public final class Shop extends InGameUI
                 // 장식용
                 else
                 {
+                    // 장식탬의 이름/설명(NBT)을 그대로 보여줄지 여부
+                    boolean showDecoMeta = shopData.getBoolean(s + ".showMeta", false);
+                    keepOwnLore = showDecoMeta;
+
                     if (player.hasPermission(P_ADMIN_SHOP_EDIT))
                     {
                         lore += t(player, "SHOP.ITEM_COPY_LORE");
                         lore += "\n" + t(player, "SHOP.DECO_DELETE_LORE");
+                        lore += "\n" + t(player, showDecoMeta ? "SHOP.DECO_HIDE_META_LORE" : "SHOP.DECO_SHOW_META_LORE");
                     }
 
-                    meta.setDisplayName(" ");
-                    meta.addItemFlags(ItemFlag.HIDE_ATTRIBUTES);
-                    meta.addItemFlags(ItemFlag.HIDE_ENCHANTS);
-                    meta.addItemFlags(ItemFlag.HIDE_ADDITIONAL_TOOLTIP);
+                    if (showDecoMeta)
+                    {
+                        // 아이탬 본래의 이름/설명을 그대로 사용. 관리자용 안내문만 뒤에 덧붙임
+                        if (meta.hasLore())
+                        {
+                            String ownLore = String.join("\n", meta.getLore());
+                            lore = lore.isEmpty() ? ownLore : ownLore + "\n" + lore;
+                        }
+                    }
+                    else
+                    {
+                        meta.setDisplayName(" ");
+                        meta.addItemFlags(ItemFlag.HIDE_ATTRIBUTES);
+                        meta.addItemFlags(ItemFlag.HIDE_ENCHANTS);
+                        meta.addItemFlags(ItemFlag.HIDE_ADDITIONAL_TOOLTIP);
+                    }
                 }
 
-                meta.setLore(new ArrayList<>(Arrays.asList(lore.split("\n"))));
+                if (keepOwnLore && lore.isEmpty())
+                    meta.setLore(null);
+                else
+                    meta.setLore(new ArrayList<>(Arrays.asList(lore.split("\n"))));
                 itemStack.setItemMeta(meta);
                 inventory.setItem(idx, itemStack);
             } catch (Exception e)
@@ -608,6 +629,17 @@ public final class Shop extends InGameUI
             {
                 SoundUtil.playerSoundEffect(player, "tradeview");
                 DynaShopAPI.openItemTradeGui(player, shopName, String.valueOf(idx));
+            }
+            // 장식탬의 이름/설명 표시를 토글
+            else if (e.isLeftClick() && !e.isShiftClick() && player.hasPermission(P_ADMIN_SHOP_EDIT))
+            {
+                boolean showMeta = !shopData.getBoolean(idx + ".showMeta", false);
+                shopData.set(idx + ".showMeta", showMeta ? true : null);
+                ShopUtil.shopConfigFiles.get(shopName).save();
+                RotationUtil.UpdateCurrentRotationData(shopName, idx);
+
+                player.sendMessage(DynamicShop.dsPrefix(player) + t(player, showMeta ? "MESSAGE.DECO_META_SHOWN" : "MESSAGE.DECO_META_HIDDEN"));
+                RefreshUI();
             }
             // 아이탬 이동, 수정, 또는 장식탬 삭제
             else if (e.isRightClick() && player.hasPermission(P_ADMIN_SHOP_EDIT))
