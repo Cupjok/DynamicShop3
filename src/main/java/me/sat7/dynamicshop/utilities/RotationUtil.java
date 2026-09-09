@@ -358,6 +358,8 @@ public final class RotationUtil
                     String mat = shopData.get().getString(s + ".mat");
                     String meta = shopData.get().getString(s + ".itemStack");
                     String hash = CreateHashString(mat, meta);
+                    if (hash == null)
+                        continue;
 
                     sharedData.get().set(hash, shopData.get().get(s));
                 }
@@ -486,7 +488,7 @@ public final class RotationUtil
                     String mat = rotationData.get().getString(slotIndex + ".mat");
                     String meta = rotationData.get().getString(slotIndex + ".itemStack");
                     String hash = CreateHashString(mat, meta);
-                    if (sharedData.get().contains(hash))
+                    if (hash != null && sharedData.get().contains(hash))
                     {
                         shopData.get().set(slotIndex, sharedData.get().get(hash));
                     }

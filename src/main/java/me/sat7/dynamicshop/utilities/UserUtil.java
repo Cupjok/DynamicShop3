@@ -268,13 +268,17 @@ public final class UserUtil
         if (data == null)
             return;
 
-        String hash = HashUtil.CreateHashString(data.get().getString(idx + ".mat"), data.get().getString(idx + ".itemStack"));
+        String mat = data.get().getString(idx + ".mat");
+        if (mat == null)
+            return; // 빈 슬롯. 지울 거래제한 데이터도 없음
+
+        String hash = HashUtil.CreateHashString(mat, data.get().getString(idx + ".itemStack"));
 
         ClearTradeLimitData(shopName, hash);
     }
     public static void ClearTradeLimitData(String shopName, String hash)
     {
-        if (!tradingVolume.containsKey(shopName) || tradingVolume.get(shopName) == null ||
+        if (hash == null || !tradingVolume.containsKey(shopName) || tradingVolume.get(shopName) == null ||
             !tradingVolume.get(shopName).containsKey(hash))
             return;
 

@@ -38,6 +38,13 @@ public class CustomConfig
         {
             try
             {
+                // 최초 실행 시 플러그인 데이터 폴더 자체가 아직 없을 수 있음
+                File parent = file.getParentFile();
+                if (parent != null && !parent.exists())
+                {
+                    parent.mkdirs();
+                }
+
                 file.createNewFile();
             } catch (IOException e)
             {

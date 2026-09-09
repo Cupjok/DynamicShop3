@@ -6,33 +6,43 @@ changed and what it means for a server owner, never leave it as just a changelog
 link. See the "Releasing" section in CLAUDE.md.
 -->
 
-## What's new in 3.23.0
+## What's new in 3.23.1
 
-### Decoration items can now show their own name and lore
+A bugfix release. No new features, no config changes, nothing to migrate — every existing shop, price and setting keeps working exactly as before.
 
-Decorative (non-tradable) items placed in a shop were always forced to a blank display name, with attributes, enchantments and any additional tooltip info hidden. That is still the default, but it is no longer the only option.
+### Fixed: the shop editor crashed when deleting an item you had not added yet
 
-**How to use it:** place a decoration the usual way (in shop edit mode, left-click an empty slot, then right-click an item in your own inventory), then **left-click that decoration** to toggle between:
+If you opened the item palette (left-click an empty slot in shop edit mode), then **shift + left-clicked** an item to jump straight into its settings screen, and then pressed the **Remove** button (the bone), the plugin threw an error and the screen stopped responding:
 
-- **Hidden** (default) — blank name, no tooltip info. Exactly the old look.
-- **Shown** — the item's real display name, lore, enchantments, attributes, potion effects and other NBT tooltip info are displayed normally.
+```
+Could not pass event InventoryClickEvent to DynamicShop
+java.lang.NullPointerException: Cannot invoke "String.getBytes()" because "mat" is null
+```
 
-The item's admin tooltip carries a hint line telling you which click toggles it, so it is discoverable in-game without reading docs.
+That settings screen is opened *before* the item exists in the shop, so the delete code was trying to look up a shop slot that was still empty. It now recognises an empty slot and simply closes back to the shop, as you would expect.
 
-The setting is stored per shop slot as `showMeta` in the shop's yml file. It is absent by default, so **every existing shop keeps its current appearance after updating** — nothing to migrate.
+Nothing else in the shop was affected when this happened — no data was lost, it was purely the click that failed — but the error was spammed to the console every time an admin hit that button, and the GUI had to be closed and reopened.
 
-### Bug fix: decoration items lost their metadata on shop rotation
+The same missing-data check was applied to a few other places that read a shop slot's material (item lookup and the shop rotation code), so a shop file that was hand-edited or left half-written can no longer produce the same crash there.
 
-Found while building the above. When a shop rotated, decoration entries were restored from the rotation data using only their material, silently dropping the saved item metadata. Any decoration with a custom name, custom lore or a specific potion type reverted to a plain vanilla item on every rotation. Metadata is now restored correctly, and the new name/lore setting survives rotations too.
+### Fixed: a scary "Fatal error!" message the very first time the plugin starts
 
-### Other
+On a brand-new install, the console printed:
 
-- New translation strings added to both the built-in `ko-KR` and `en-US` language tables.
-- Filling a shop slot with a new item now clears the previous occupant's decoration display setting, so it can't be inherited unexpectedly.
+```
+Fatal error! Config Setup Fail. File name: User
+```
+
+The plugin was trying to create `User.yml` a moment before its own `plugins/DynamicShop/` folder existed. It recovered on its own and the file was created anyway, so nothing was actually broken — but the wording made it look like a serious failure on a first boot. The plugin now creates its data folder first, so the message is gone.
 
 ### Compatibility
 
-Same as 3.22.0 — Paper, Purpur and Folia on Minecraft 26.2. No config changes required; drop in the new jar and restart.
+- Server software: **Paper, Purpur and Folia** (and Paper/Purpur forks), Minecraft **26.2**.
+- Economy: any Vault-API-compatible provider (Vault, VaultUnlocked, CMIVault/CMI economy, ...), or XP / PlayerPoints / Jobs Reborn points per shop.
+- **No config or shop file changes are required.** Drop the new jar in and restart.
 
-**Not verified in-game:** this release was built and unit-tested on JDK 25, but the toggle click and the two tooltip appearances were not exercised with a Minecraft client.
+### Verified / not verified
 
+Verified in-game on a Purpur 26.2 server with a full plugin set (CMI economy via Vault, LuckPerms, WorldGuard, PlaceholderAPI, MMOItems and others): the crash above no longer occurs, and deleting shop items normally still works and is saved correctly.
+
+The first-run "Fatal error!" fix was verified by code inspection and a clean build only — reproducing it requires a completely fresh install, which was not re-run on a test server.

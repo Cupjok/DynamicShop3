@@ -244,7 +244,7 @@ public final class ShopUtil
             if (!data.get().contains(s + ".value"))
                 continue; // 장식용임
 
-            if (data.get().getString(s + ".mat").equals(item.getType().toString()))
+            if (item.getType().toString().equals(data.get().getString(s + ".mat")))
             {
                 String metaStr = data.get().getString(s + ".itemStack");
 

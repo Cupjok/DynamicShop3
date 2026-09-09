@@ -10,6 +10,10 @@ public class HashUtil
 {
     public static String CreateHashString(String mat, String meta)
     {
+        // 빈 슬롯/장식탬 등 mat 이 없는 데이터가 들어올 수 있음
+        if (mat == null)
+            return null;
+
         MessageDigest md;
         try
         {
