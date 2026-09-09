@@ -45,11 +45,17 @@ jobs:
         cache: maven
     - name: Build with Maven
       run: mvn -B clean package
+    # RELEASE_NOTES.md starts with an HTML comment explaining how to write it.
+    # That is guidance for whoever edits the file, not something release readers
+    # should see, so strip leading comment blocks before publishing.
+    - name: Strip authoring comments from release notes
+      run: perl -0pe 's/\A(?:\s*<!--.*?-->\s*)+//s' RELEASE_NOTES.md > release-body.md
+
     - name: Create GitHub release
       uses: softprops/action-gh-release@v2
       with:
         files: target/DynamicShop-*.jar
-        # RELEASE_NOTES.md is the hand-written summary for this release; the
-        # auto-generated commit changelog gets appended below it.
-        body_path: RELEASE_NOTES.md
+        # The hand-written summary for this release; the auto-generated commit
+        # changelog gets appended below it.
+        body_path: release-body.md
         generate_release_notes: true
