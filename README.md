@@ -5,7 +5,6 @@
   <img src="https://img.shields.io/badge/Paper-Purpur-Folia-blue">
   <img src="https://img.shields.io/badge/Java-21%2B-orange">
   <img src="https://img.shields.io/github/v/release/Cupjok/DynamicShop3">
-  <img src="https://img.shields.io/github/actions/workflow/status/Cupjok/DynamicShop3/ds.yml">
   <img src="https://img.shields.io/badge/Fork%20by-Claude%20Code-orange">
 </p>
 
