@@ -68,6 +68,14 @@ public final class DynaShopAPI
         UIManager.Open(player, inventory, uiClass);
     }
 
+    // 상점 화폐 선택창 (all currencies incl. MultiCurrency)
+    public static void openCurrencySelector(Player player, String shopName)
+    {
+        me.sat7.dynamicshop.guis.CurrencySelector uiClass = new me.sat7.dynamicshop.guis.CurrencySelector();
+        Inventory inventory = uiClass.getGui(player, shopName);
+        UIManager.Open(player, inventory, uiClass);
+    }
+
     // 상점 로테이트 편집기
     public static void OpenRotationEditor(Player player, String shopName)
     {

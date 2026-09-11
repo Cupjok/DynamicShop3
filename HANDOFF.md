@@ -2,6 +2,24 @@
 
 Living session-continuity notes. Read `CLAUDE.md` first for the durable architecture reference — this file is the "what's actually going on right now" doc. Update it whenever you leave work mid-flight; trim it once things fully land and are verified (don't let it grow forever as a changelog — that's what git history / README are for).
 
+## Session 2026-09-12 (after the 3.24.0 release): currency selector GUI — released as 3.25.0
+
+- New `guis/CurrencySelector` (UI_TYPE `CurrencySelector`, opened with `DynaShopAPI.openCurrencySelector`): shop
+  settings → new button **slot 31 "Choose currency..."** (shows the current currency) → 54-slot list of every currency:
+  Vault, Exp, JobPoint, PlayerPoint (slots 0-3) and every MultiCurrency currency (slots 9-44). Current = yellow pane +
+  "Selected"; unavailable (Jobs/PlayerPoints missing, MultiCurrency currency disabled) = gray pane + reason, click refused
+  with the existing error message. Writes canonical `Options.currency` values (`Vault`, `Exp`, `JobPoint`,
+  `PlayerPoint`, `MultiCurrency:<id>`) and returns to shop settings. 5 new lang keys (ko-KR + en-US).
+- **Pre-existing bug fixed on the way**: the old ShopSettings JobPoint/PlayerPoint buttons wrote `jp`/`pp`, which
+  `ShopUtil.GetCurrency()` has always read as **Vault** — clicking them silently kept the shop on Vault. They now write
+  `JobPoint`/`PlayerPoint`. Shop files that already contain `jp`/`pp` are *not* reinterpreted (they have been trading
+  in Vault money; switching them silently would change live prices' currency) — re-select the currency once.
+- Tests: `mvn clean verify` 39/39 (new: selector values round-trip through `GetCurrency`). Real server (bot with the
+  edit permission): shop info right-click → settings → slot 31 → picked gems (`MultiCurrency:gems` saved, button shows
+  it), JobPoint (saved as `JobPoint`, shown Selected), PlayerPoint (not installed → refused, unchanged), Vault
+  (restored). No errors.
+- Released as **3.25.0** (user also verified in-game on the test server).
+
 ## Session 2026-09-11: MultiCurrency integration + full-colour shop names (3.24.0, not yet committed)
 
 Two features, both opt-in: (1) shops can trade in a MultiCurrency currency, (2) shop names in the shop menu
@@ -122,7 +140,6 @@ falls back to Vault for a MultiCurrency shop; quick-buy groups each MultiCurrenc
   shop traffic, worth watching on very busy servers.
 - A payout (`account transfer`) checks the shop balance when issued, not when MultiCurrency confirms.
 - A sell confirmed while the player is offline skips the per-player trade-limit record and the Bukkit event.
-- `ShopSettings` has no MultiCurrency button (use the command).
 - `&` + a lower-case colour letter or a digit glued to text is still a colour code (`Red&aGreen`, `Buy 1&2` → `&2`),
   matching classic legacy behaviour; only the upper-case-after-a-word case (`R&D`) is treated as text.
 - `/shop` does not open the start page for the test bots while `/ds` and `/ds shop` do — confirmed pre-existing (the
@@ -140,7 +157,7 @@ data (like MultiCurrency's own earlier bot test).
 ### Next steps
 1. Optional human visual check of `/ds` colours on the test server, then remove the fixtures.
 2. Commit, push, tag `3.24.0` (see "Releasing" in CLAUDE.md; `RELEASE_NOTES.md` is written).
-3. Possible follow-ups: MultiCurrency button in ShopSettings; the pre-existing `/shop` start-page behaviour.
+3. Possible follow-up: the pre-existing `/shop` start-page behaviour.
 
 ---
 

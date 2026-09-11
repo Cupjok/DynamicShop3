@@ -221,6 +221,20 @@ public class MultiCurrencyTest
         assertEquals("", ShopUtil.GetMultiCurrencyId(Constants.S_VAULT));
     }
 
+    @Test
+    public void currencySelectorValuesAreUnderstoodByGetCurrency()
+    {
+        // what CurrencySelector / the ShopSettings buttons write into Options.currency
+        YamlConfiguration shop = new YamlConfiguration();
+        for (String v : new String[]{Constants.S_VAULT, Constants.S_EXP, Constants.S_JOBPOINT, Constants.S_PLAYERPOINT})
+        {
+            shop.set("Options.currency", v);
+            assertEquals(v, ShopUtil.GetCurrency(shop));
+        }
+        shop.set("Options.currency", Constants.S_MULTICURRENCY_PREFIX + "event_points");
+        assertEquals("MultiCurrency:event_points", ShopUtil.GetCurrency(shop));
+    }
+
     // ------------------------------------------------------------------ journal file
 
     @Test

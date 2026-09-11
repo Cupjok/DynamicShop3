@@ -103,6 +103,9 @@ implementation classes or its config, and never change the MultiCurrency project
   payouts, never more decimals than the currency's scale — MultiCurrency rejects excess precision), display-only
   balance cache.
 - `economyhook/MultiCurrencyBridge` — the only class importing the API. Only reached after the guard.
+- `guis/CurrencySelector` — shop settings slot 31: lists every currency (built-ins + all MultiCurrency currencies)
+  and writes the canonical `Options.currency` value. Always write `Vault`/`Exp`/`JobPoint`/`PlayerPoint`/
+  `MultiCurrency:<id>` — `GetCurrency()` reads anything else (e.g. `jp`, `pp`) as Vault.
 - `transactions/MultiCurrencyTrade` — buy/sell/payout flow + journal; `MultiCurrencyOrder` — one order;
   `MultiCurrencyOutcome` — classifies a `TransactionResult`.
 

@@ -126,6 +126,11 @@ public final class LangUtil
             ccLang.get().addDefault("SHOP_SETTING.EXP_LORE", "§f플레이어의 경험치로 거래합니다.");
             ccLang.get().addDefault("SHOP_SETTING.JOB_POINT_LORE", "§fJobs 플러그인의 job point로 거래합니다.");
             ccLang.get().addDefault("SHOP_SETTING.PLAYER_POINT_LORE", "§fPlayerPoint 플러그인의 point로 거래합니다.");
+            ccLang.get().addDefault("SHOP_SETTING.CURRENCY_SELECT", "§f화폐 선택...");
+            ccLang.get().addDefault("SHOP_SETTING.CURRENCY_SELECT_LORE", "§f사용 가능한 모든 화폐 목록을 엽니다 (MultiCurrency 포함).");
+            ccLang.get().addDefault("SHOP_SETTING.MULTICURRENCY_LORE", "§fMultiCurrency 플러그인의 화폐로 거래합니다.\n§7ID: {id}  기호: {symbol}  소수점: {decimals}");
+            ccLang.get().addDefault("SHOP_SETTING.CURRENCY_UNAVAILABLE", "§c사용할 수 없음 (플러그인 없음 또는 비활성화된 화폐)");
+            ccLang.get().addDefault("CURRENCY_SELECT_TITLE", "§3화폐 선택");
             ccLang.get().addDefault("SHOP_SETTING.SHOW_VALUE_CHANGE_LORE", "§f가격 변화량을 표시합니다.");
             ccLang.get().addDefault("SHOP_SETTING.HIDE_STOCK", "§f재고 수량 표시를 숨깁니다.");
             ccLang.get().addDefault("SHOP_SETTING.HIDE_PRICING_TYPE", "§f가격 유형 표기를 숨깁니다.");
@@ -592,6 +597,11 @@ public final class LangUtil
             ccLang.get().addDefault("SHOP_SETTING.EXP_LORE", "§fTrade with the player's experience points.");
             ccLang.get().addDefault("SHOP_SETTING.JOB_POINT_LORE", "§fTrade with job points. \n§fRequires 'Jobs Reborn' plugin");
             ccLang.get().addDefault("SHOP_SETTING.PLAYER_POINT_LORE", "§fTrade with player points. \n§fRequires 'Player point' plugin");
+            ccLang.get().addDefault("SHOP_SETTING.CURRENCY_SELECT", "§fChoose currency...");
+            ccLang.get().addDefault("SHOP_SETTING.CURRENCY_SELECT_LORE", "§fOpens the list of every available currency (incl. MultiCurrency).");
+            ccLang.get().addDefault("SHOP_SETTING.MULTICURRENCY_LORE", "§fTrade with a MultiCurrency currency.\n§7ID: {id}  Symbol: {symbol}  Decimals: {decimals}");
+            ccLang.get().addDefault("SHOP_SETTING.CURRENCY_UNAVAILABLE", "§cNot available (plugin missing or currency disabled)");
+            ccLang.get().addDefault("CURRENCY_SELECT_TITLE", "§3Choose currency");
             ccLang.get().addDefault("SHOP_SETTING.SHOW_VALUE_CHANGE_LORE", "§fShows the amount of change in price.");
             ccLang.get().addDefault("SHOP_SETTING.HIDE_STOCK", "§fHide stock.");
             ccLang.get().addDefault("SHOP_SETTING.HIDE_PRICING_TYPE", "§fHide price type.");

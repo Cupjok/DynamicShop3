@@ -66,6 +66,7 @@ public final class ShopSettings extends InGameUI
     private final int CURRENCY_EXP = 28;
     private final int CURRENCY_JP = 29;
     private final int CURRENCY_PP = 30;
+    private final int CURRENCY_SELECT = 31;
 
     private final int CMD_TOGGLE = 33;
     private final int CMD_SELL = 34;
@@ -330,8 +331,17 @@ public final class ShopSettings extends InGameUI
         if (!currency.equalsIgnoreCase(Constants.S_JOBPOINT) &&
             !currency.equalsIgnoreCase(Constants.S_PLAYERPOINT) &&
             !currency.equalsIgnoreCase(Constants.S_EXP) &&
-            !ShopUtil.IsMultiCurrency(currency)) // MultiCurrency shops: set via '/ds shop <shop> currency multicurrency:<id>'
+            !ShopUtil.IsMultiCurrency(currency)) // MultiCurrency shops: chosen in the currency selector (CURRENCY_SELECT)
             currency = Constants.S_VAULT;
+
+        // Opens the list of every usable currency (built-ins + MultiCurrency)
+        boolean isMultiCurrency = ShopUtil.IsMultiCurrency(currency);
+        String currentLabel = isMultiCurrency ? "MultiCurrency: " + ShopUtil.GetMultiCurrencyId(currency) : currency;
+        CreateButton(CURRENCY_SELECT, isMultiCurrency ? Material.YELLOW_STAINED_GLASS_PANE : Material.SUNFLOWER,
+                t(player, "SHOP_SETTING.CURRENCY_SELECT"),
+                new ArrayList<>(Arrays.asList(t(player, "SHOP_SETTING.CURRENCY_SELECT_LORE"),
+                        "§9" + t(player, "CUR_STATE") + ": §f" + currentLabel,
+                        "§e" + t(player, "CLICK") + ": " + t(player, "SET"))));
 
         CreateCurrencyButton(CURRENCY_VAULT, currency.equalsIgnoreCase(Constants.S_VAULT), t(player, "SHOP_SETTING.CURRENCY") + "Vault", t(player, "SHOP_SETTING.VAULT_LORE"));
         CreateCurrencyButton(CURRENCY_EXP, currency.equalsIgnoreCase(Constants.S_EXP), t(player, "SHOP_SETTING.CURRENCY") + "Exp", t(player, "SHOP_SETTING.EXP_LORE"));
@@ -901,7 +911,7 @@ public final class ShopSettings extends InGameUI
 
             if (!currency.equalsIgnoreCase(Constants.S_JOBPOINT))
             {
-                data.get().set("Options.currency", "jp");
+                data.get().set("Options.currency", Constants.S_JOBPOINT); // was "jp", which GetCurrency() reads as Vault
                 data.save();
                 DynaShopAPI.openShopSettingGui(player, shopName);
             }
@@ -917,10 +927,14 @@ public final class ShopSettings extends InGameUI
 
             if (!currency.equalsIgnoreCase(Constants.S_PLAYERPOINT))
             {
-                data.get().set("Options.currency", "pp");
+                data.get().set("Options.currency", Constants.S_PLAYERPOINT); // was "pp", which GetCurrency() reads as Vault
                 data.save();
                 DynaShopAPI.openShopSettingGui(player, shopName);
             }
+        }
+        else if (e.getSlot() == CURRENCY_SELECT)
+        {
+            DynaShopAPI.openCurrencySelector(player, shopName);
         }
         else if (e.getSlot() == TRADE_UI_SETTING)
         {
