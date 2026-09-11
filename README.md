@@ -48,31 +48,14 @@
 
 ## 💰 Economy & Currency Support
 
-### Vault-compatible economies
+| Integration | Type | Description | Link |
+|---|---|---|---|
+| Vault-compatible Economy | Economy | Works with Vault API-compatible economy providers | [Vault](https://www.spigotmc.org/resources/vault.34315/) |
+| PlayerPoints | Points | Use PlayerPoints as a shop currency | [PlayerPoints](https://www.spigotmc.org/resources/playerpoints.80745/) |
+| Jobs Reborn | Points | Use Jobs Reborn points through the `jp` currency integration | [Jobs Reborn](https://www.spigotmc.org/resources/jobs-reborn.4216/) |
+| MultiCurrency | Currency | Use server-defined currencies such as Coins, Gems, and Tokens | [MultiCurrency](https://github.com/Cupjok/MultiCurrency) |
 
-DynamicShop3 works with Vault API-compatible economy providers rather than requiring a specific plugin named `Vault`.
-
-Examples include:
-
-- VaultUnlocked
-- CMIVault
-- Other Vault-compatible economy providers
-
-### PlayerPoints
-
-PlayerPoints can be used as a shop currency when the integration is available.
-
-### Jobs Reborn
-
-Jobs Reborn points can be used as a shop currency through the `jp` currency integration.
-
-### MultiCurrency
-
-Optional support for [MultiCurrency](https://github.com/Cupjok/MultiCurrency) allows shops to use currencies such as Coins, Gems, Tokens, and other server-defined currencies.
-
-Each shop can select its own MultiCurrency currency without replacing the existing Vault/CMI economy.
-
-MultiCurrency payments use the plugin's public API with transaction protection and recovery for unfinished orders.
+MultiCurrency is optional and uses the plugin's public API with transaction protection and recovery for unfinished orders.
 
 ## 📈 Dynamic Pricing
 
