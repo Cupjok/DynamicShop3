@@ -1,10 +1,6 @@
 # 🛒 DynamicShop3
 
 <p align="center">
-  <img src="banner.png" alt="DynamicShop3">
-</p>
-
-<p align="center">
   <img src="https://img.shields.io/badge/Minecraft-1.16.5--26.2-green">
   <img src="https://img.shields.io/badge/Paper-Purpur-Folia-blue">
   <img src="https://img.shields.io/badge/Java-21%2B-orange">
