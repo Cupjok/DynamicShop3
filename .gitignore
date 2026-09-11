@@ -46,6 +46,8 @@ Temporary Items
 
 # Package Files #
 *.jar
+# vendored compile-only dependencies (see the dynamicshop-local-lib repository in pom.xml)
+!lib/**/*.jar
 *.war
 *.nar
 *.ear

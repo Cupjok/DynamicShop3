@@ -329,7 +329,8 @@ public final class ShopSettings extends InGameUI
         currency = confSec_Options.getString("currency", "");
         if (!currency.equalsIgnoreCase(Constants.S_JOBPOINT) &&
             !currency.equalsIgnoreCase(Constants.S_PLAYERPOINT) &&
-            !currency.equalsIgnoreCase(Constants.S_EXP))
+            !currency.equalsIgnoreCase(Constants.S_EXP) &&
+            !ShopUtil.IsMultiCurrency(currency)) // MultiCurrency shops: set via '/ds shop <shop> currency multicurrency:<id>'
             currency = Constants.S_VAULT;
 
         CreateCurrencyButton(CURRENCY_VAULT, currency.equalsIgnoreCase(Constants.S_VAULT), t(player, "SHOP_SETTING.CURRENCY") + "Vault", t(player, "SHOP_SETTING.VAULT_LORE"));

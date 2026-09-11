@@ -8,6 +8,7 @@ import me.sat7.dynamicshop.commands.Root;
 import me.sat7.dynamicshop.commands.Sell;
 import me.sat7.dynamicshop.constants.Constants;
 import me.sat7.dynamicshop.economyhook.JobsHook;
+import me.sat7.dynamicshop.economyhook.MultiCurrencyHook;
 import me.sat7.dynamicshop.economyhook.PlayerpointHook;
 import me.sat7.dynamicshop.events.JoinQuit;
 import me.sat7.dynamicshop.events.OnChat;
@@ -17,6 +18,7 @@ import me.sat7.dynamicshop.files.CustomConfig;
 import me.sat7.dynamicshop.guis.QuickSell;
 import me.sat7.dynamicshop.guis.StartPage;
 import me.sat7.dynamicshop.guis.UIManager;
+import me.sat7.dynamicshop.transactions.MultiCurrencyTrade;
 import me.sat7.dynamicshop.utilities.*;
 import net.md_5.bungee.api.ChatColor;
 import net.md_5.bungee.api.chat.ClickEvent;
@@ -199,6 +201,8 @@ public final class DynamicShop extends JavaPlugin implements Listener
         StartUserDataTask();
         hookIntoJobs();
         hookIntoPlayerPoints();
+        MultiCurrencyHook.Setup();
+        MultiCurrencyTrade.OnEnable();
         InitPapi();
 
         RotationUtil.RestartAllRotationTask();
@@ -554,6 +558,7 @@ public final class DynamicShop extends JavaPlugin implements Listener
         cancelIfNotNull(userDataRepetitiveTask);
         RotationUtil.CancelAllRotationTasks();
         OnChat.CancelAllTasks();
+        MultiCurrencyTrade.OnDisable();
         Bukkit.getGlobalRegionScheduler().cancelTasks(this);
         Bukkit.getAsyncScheduler().cancelTasks(this);
 

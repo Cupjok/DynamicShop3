@@ -34,4 +34,6 @@ public final class Constants
     public static final String S_EXP = "Exp";
     public static final String S_PLAYERPOINT = "PlayerPoint";
     public static final String S_JOBPOINT = "JobPoint";
+    // MultiCurrency: Options.currency is "MultiCurrency:<currency id>", e.g. "MultiCurrency:gems" (case-insensitive)
+    public static final String S_MULTICURRENCY_PREFIX = "MultiCurrency:";
 }

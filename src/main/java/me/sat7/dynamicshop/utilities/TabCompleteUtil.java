@@ -296,6 +296,8 @@ public final class TabCompleteUtil
                                 temp.add("exp");
                                 temp.add("jobpoint");
                                 temp.add("playerpoint");
+                                for (String id : me.sat7.dynamicshop.economyhook.MultiCurrencyHook.GetCurrencyIds())
+                                    temp.add("multicurrency:" + id);
                                 AddToAutoCompleteIfValid(args[3]);
                             }
 

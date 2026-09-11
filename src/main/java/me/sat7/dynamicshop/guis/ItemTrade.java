@@ -1,10 +1,12 @@
 package me.sat7.dynamicshop.guis;
 
+import java.math.RoundingMode;
 import java.util.ArrayList;
 import java.util.Arrays;
 
 import me.sat7.dynamicshop.DynaShopAPI;
 import me.sat7.dynamicshop.constants.Constants;
+import me.sat7.dynamicshop.economyhook.MultiCurrencyHook;
 import me.sat7.dynamicshop.economyhook.PlayerpointHook;
 import me.sat7.dynamicshop.events.OnChat;
 import me.sat7.dynamicshop.files.CustomConfig;
@@ -136,6 +138,9 @@ public final class ItemTrade extends InGameUI
                 } else if (ShopUtil.GetCurrency(data).equalsIgnoreCase(Constants.S_EXP))
                 {
                     player.sendMessage(DynamicShop.dsPrefix(player) + t(player, "TRADE.BALANCE") + ":§f " + n(player.getTotalExperience()) + t(player, "EXP_POINTS"));
+                } else if (ShopUtil.IsMultiCurrency(ShopUtil.GetCurrency(data)))
+                {
+                    player.sendMessage(DynamicShop.dsPrefix(player) + t(player, "TRADE.BALANCE") + ":§f " + MultiCurrencyHook.GetDisplayBalance(player, ShopUtil.GetMultiCurrencyId(ShopUtil.GetCurrency(data))));
                 } else
                 {
                     player.sendMessage(DynamicShop.dsPrefix(player) + t(player, "TRADE.BALANCE") + ":§f " + n(DynamicShop.getEconomy().getBalance(player)));
@@ -217,6 +222,16 @@ public final class ItemTrade extends InGameUI
         }
     }
 
+    // MultiCurrency shops show prices in that currency's own format, rounded the way they are charged (buy: up)
+    // or paid out (sell: down). Every other currency keeps the existing number format.
+    private String Price(double value, boolean isIntTypeCurrency, boolean buy)
+    {
+        String currency = ShopUtil.GetCurrency(shopData);
+        if (ShopUtil.IsMultiCurrency(currency))
+            return MultiCurrencyHook.FormatAmount(ShopUtil.GetMultiCurrencyId(currency), value, buy ? RoundingMode.CEILING : RoundingMode.FLOOR);
+        return n(value, isIntTypeCurrency);
+    }
+
     private void CreateBalanceButton()
     {
         String moneyLore = l("TRADE_VIEW.BALANCE");
@@ -234,6 +249,11 @@ public final class ItemTrade extends InGameUI
         {
             myBalanceString = "§f" + n(player.getTotalExperience()) + t(player,"EXP_POINTS");
         }
+        else if (ShopUtil.IsMultiCurrency(ShopUtil.GetCurrency(shopData)))
+        {
+            // display only (cached, refreshed asynchronously); trades never rely on it
+            myBalanceString = "§f" + MultiCurrencyHook.GetDisplayBalance(player, ShopUtil.GetMultiCurrencyId(ShopUtil.GetCurrency(shopData)));
+        }
         else
         {
             myBalanceString = "§f" + n(DynamicShop.getEconomy().getBalance(player));
@@ -249,6 +269,8 @@ public final class ItemTrade extends InGameUI
                 balStr = n(d, true) + t(player, "PLAYER_POINTS");
             else if (ShopUtil.GetCurrency(shopData).equalsIgnoreCase(Constants.S_EXP))
                 balStr = n(d, true) + t(player, "EXP_POINTS");
+            else if (ShopUtil.IsMultiCurrency(ShopUtil.GetCurrency(shopData)))
+                balStr = MultiCurrencyHook.FormatAmount(ShopUtil.GetMultiCurrencyId(ShopUtil.GetCurrency(shopData)), d, RoundingMode.FLOOR);
             else
                 balStr = n(d);
         } else
@@ -388,12 +410,12 @@ public final class ItemTrade extends InGameUI
 
                 if (shopData.contains(tradeIdx + ".discount"))
                 {
-                    String original = n(price * 100 / (double) (100 - shopData.getInt(tradeIdx + ".discount")), isIntTypeCurrency);
-                    priceText = t(player, "TRADE.SELL_PRICE_DISCOUNTED" + currencyKey).replace("{num}", original).replace("{num2}", n(price, isIntTypeCurrency));
+                    String original = Price(price * 100 / (double) (100 - shopData.getInt(tradeIdx + ".discount")), isIntTypeCurrency, !sell);
+                    priceText = t(player, "TRADE.SELL_PRICE_DISCOUNTED" + currencyKey).replace("{num}", original).replace("{num2}", Price(price, isIntTypeCurrency, !sell));
                 }
                 else
                 {
-                    priceText = t(player, "TRADE.SELL_PRICE" + currencyKey).replace("{num}", n(price, isIntTypeCurrency));
+                    priceText = t(player, "TRADE.SELL_PRICE" + currencyKey).replace("{num}", Price(price, isIntTypeCurrency, !sell));
                 }
             }
             else
@@ -402,12 +424,12 @@ public final class ItemTrade extends InGameUI
 
                 if (shopData.contains(tradeIdx + ".discount"))
                 {
-                    String original = n(price * 100 / (double) (100 - shopData.getInt(tradeIdx + ".discount")), isIntTypeCurrency);
-                    priceText = t(player, "TRADE.PRICE_DISCOUNTED" + currencyKey).replace("{num}", original).replace("{num2}", n(price, isIntTypeCurrency));
+                    String original = Price(price * 100 / (double) (100 - shopData.getInt(tradeIdx + ".discount")), isIntTypeCurrency, !sell);
+                    priceText = t(player, "TRADE.PRICE_DISCOUNTED" + currencyKey).replace("{num}", original).replace("{num2}", Price(price, isIntTypeCurrency, !sell));
                 }
                 else
                 {
-                    priceText = t(player, "TRADE.PRICE" + currencyKey).replace("{num}", n(price, isIntTypeCurrency));
+                    priceText = t(player, "TRADE.PRICE" + currencyKey).replace("{num}", Price(price, isIntTypeCurrency, !sell));
                 }
             }
 

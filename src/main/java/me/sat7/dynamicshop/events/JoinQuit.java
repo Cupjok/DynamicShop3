@@ -2,6 +2,8 @@ package me.sat7.dynamicshop.events;
 
 import me.sat7.dynamicshop.DynamicShop;
 import me.sat7.dynamicshop.UpdateChecker;
+import me.sat7.dynamicshop.economyhook.MultiCurrencyHook;
+import me.sat7.dynamicshop.transactions.MultiCurrencyTrade;
 
 import me.sat7.dynamicshop.guis.UIManager;
 import me.sat7.dynamicshop.utilities.UserUtil;
@@ -24,6 +26,8 @@ public class JoinQuit implements Listener
     {
         Player player = e.getPlayer();
         UserUtil.CreateNewPlayerData(player);
+        // items owed by MultiCurrency orders that finished while the player was away
+        MultiCurrencyTrade.OnPlayerJoin(player);
 
         boolean isSnapshot = DynamicShop.yourVersion.contains("snapshot");
         if (DynamicShop.updateAvailable || isSnapshot)
@@ -60,5 +64,6 @@ public class JoinQuit implements Listener
         UIManager.OnPlayerQuit(e.getPlayer());
         UserUtil.userTempData.remove(e.getPlayer().getUniqueId());
         UserUtil.userInteractItem.remove(e.getPlayer().getUniqueId());
+        MultiCurrencyHook.OnPlayerQuit(e.getPlayer().getUniqueId());
     }
 }

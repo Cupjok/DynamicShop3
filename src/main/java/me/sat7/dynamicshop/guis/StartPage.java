@@ -7,6 +7,7 @@ import me.sat7.dynamicshop.DynaShopAPI;
 import me.sat7.dynamicshop.utilities.ConfigUtil;
 import me.sat7.dynamicshop.utilities.ItemsUtil;
 import me.sat7.dynamicshop.utilities.LangUtil;
+import me.sat7.dynamicshop.utilities.ShopNameFormatter;
 import me.sat7.dynamicshop.utilities.ShopUtil;
 import org.bukkit.Bukkit;
 import org.bukkit.Material;
@@ -59,7 +60,8 @@ public final class StartPage extends InGameUI
     {
         selectedIndex = -1;
 
-        inventory = Bukkit.createInventory(player, ccStartPage.get().getInt("Options.UiSlotCount"), ccStartPage.get().getString("Options.Title"));
+        inventory = Bukkit.createInventory(player, ccStartPage.get().getInt("Options.UiSlotCount"),
+                ShopNameFormatter.format(ccStartPage.get().getString("Options.Title"), ConfigUtil.GetUseHexColorCode()));
 
         //아이콘, 이름, 로어, 인덱스, 커맨드
         ConfigurationSection cs = ccStartPage.get().getConfigurationSection("Buttons");
@@ -109,8 +111,10 @@ public final class StartPage extends InGameUI
                     meta = btn.getItemMeta();
                 }
 
-                meta.setDisplayName(name);
-                meta.setLore(tempList);
+                // Shop buttons carry the shop's display name: full colour/hex/MiniMessage-colour support.
+                meta.displayName(ShopNameFormatter.formatItemName(name, ConfigUtil.GetUseHexColorCode()));
+                // Same pipeline as the button name (Rename), so Change Lore supports the same colours/formats.
+                meta.lore(ShopNameFormatter.formatLore(tempList, ConfigUtil.GetUseHexColorCode()));
                 meta.addItemFlags(ItemFlag.HIDE_ATTRIBUTES);
                 meta.addItemFlags(ItemFlag.HIDE_ADDITIONAL_TOOLTIP);
                 btn.setItemMeta(meta);

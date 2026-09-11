@@ -2,6 +2,148 @@
 
 Living session-continuity notes. Read `CLAUDE.md` first for the durable architecture reference — this file is the "what's actually going on right now" doc. Update it whenever you leave work mid-flight; trim it once things fully land and are verified (don't let it grow forever as a changelog — that's what git history / README are for).
 
+## Session 2026-09-11: MultiCurrency integration + full-colour shop names (3.24.0, not yet committed)
+
+Two features, both opt-in: (1) shops can trade in a MultiCurrency currency, (2) shop names in the shop menu
+accept hex/MiniMessage colours. The MultiCurrency project itself was **not** modified (hard rule for this work).
+
+### What was built
+- **MultiCurrency backend** — `Options.currency: MultiCurrency:<id>` (set with `/ds shop <shop> currency multicurrency:<id>`,
+  tab-completed). Architecture, transaction rules and the idempotency design are written down in `CLAUDE.md`
+  ("MultiCurrency integration") — read that before touching any of it. In short:
+  - API only (`multicurrency-api` 1.0.0, vendored under `lib/` as an in-repo Maven repo because MultiCurrency is not
+    on any public repository; the jar is the unmodified `MultiCurrency-API-1.0.0.jar` release asset, its `javap`
+    signatures were diffed against the MultiCurrency source and are identical). `provided` scope, not shaded.
+  - `MultiCurrencyHook` (no API types) / `MultiCurrencyBridge` (only API user) / `MultiCurrencyTrade` (engine +
+    journal) / `MultiCurrencyOrder` / `MultiCurrencyOutcome`.
+  - Buy: same quantity/stock/limit loop as `Buy.buy()` minus the balance check → stock + per-player limit reserved →
+    order journaled → one atomic `withdraw` with key `dynamicshop3:buy:<uuid>` → items only after APPLIED.
+  - Sell: items removed + `player.saveData()` → journaled → `deposit` (`dynamicshop3:sell:<uuid>`) → items returned if
+    refused. Account payout: `dynamicshop3:payout:<uuid>`. Refund of an undeliverable paid buy: `dynamicshop3:refund:<uuid>`.
+  - `OUTCOME_UNKNOWN`/exception → retried with the same key after 1 s, 3 s, 10 s, then every 60 s and on every start.
+    After a possible earlier commit, only `INSUFFICIENT_FUNDS`/`BALANCE_LIMIT_EXCEEDED` (checked inside
+    MultiCurrency's DB transaction after its key lookup — verified by reading `CurrencyService.execute`) plus a
+    `history()` key lookup can cancel an order. `DUPLICATE_TRANSACTION` = the earlier attempt committed.
+  - Journal `plugins/DynamicShop/MultiCurrencyOrders.yml`, atomic write. `GIVING` at startup → `REVIEW` (SEVERE log,
+    never re-given). Unreadable journal → moved aside, never overwritten; invalid entries → logged + `.bak` copy.
+  - Display: prices/balances in the currency's own `format()`, buy prices rounded up, sell prices down (as charged/paid).
+  - Behaviour difference vs Vault shops (intentional, documented in RELEASE_NOTES/README): no partial fill when the
+    player can't afford the full amount — a partial fill would need a balance read first (check-then-act).
+- **Shop-name colours** — `utilities/ShopNameFormatter`, used for the shop GUI title (`Options.title`), start page title
+  and start page button names. Syntax + safety rules in `CLAUDE.md` ("Shop-name formatting") and README.
+  Only visual MiniMessage tags are registered; click/hover/insert/font/etc. stay literal; `sanitize()` strips any
+  interactive style; malformed input never throws. Internal shop *file* names (ShopList, admin GUI titles, signs) are
+  lookup keys and deliberately not formatted.
+
+### Files changed
+New: `economyhook/MultiCurrencyHook.java`, `economyhook/MultiCurrencyBridge.java`, `transactions/MultiCurrencyTrade.java`,
+`transactions/MultiCurrencyOrder.java`, `transactions/MultiCurrencyOutcome.java`, `utilities/ShopNameFormatter.java`,
+tests `transactions/MultiCurrencyTest.java`, `utilities/ShopNameFormatterTest.java`, `lib/` (vendored API jar + pom).
+Modified: `Buy`, `Sell` (MultiCurrency branches; quick-sell item removal extracted into `RemoveQuickSellItems`, no
+behaviour change; `RunBuy/SellCommand` name-based overloads), `Shop`, `ItemTrade`, `StartPage`, `ShopSettings` (a
+MultiCurrency shop no longer shows as "Vault"), `Account`, `commands/shop/Currency`, `ShopUtil` (`GetCurrency` never
+falls back to Vault for a MultiCurrency shop; quick-buy groups each MultiCurrency currency separately),
+`TabCompleteUtil`, `LangUtil` (13 keys, ko-KR + en-US), `JoinQuit`, `DynamicShop`, `Constants`, `plugin.yml`
+(softdepend), `pom.xml` (3.24.0, repo + dependency), `.gitignore` (allow `lib/**/*.jar`), docs.
+
+### Tests
+- **Unit (automated, `mvn clean verify`)**: 33 tests at first, 38 after the final pass (below), 0 failures. `ShopNameFormatterTest` (19): plain, legacy `&`/`§`,
+  single hex in 7 spellings, lowercase hex, multiple hex, hex+bold, hex+italic, multiple formats + gradient, all legacy
+  formats, 23 malformed inputs, 11 interactive/unsafe tags (click/hover/insert/font/key/lang/selector/score/nbt/newline),
+  sanitize(), item names non-italic by default, length cap, existing config compatibility (Sample Shop, default
+  Startpage.yml, `§3`+name buttons). `MultiCurrencyTest` (14): outcome classification for every FailureReason
+  (first attempt vs after possible commit), idempotency keys (stable, distinct refund key, ≤128 chars), journal
+  round-trip, invalid entries rejected, amount rounding (CEILING/FLOOR, float noise, scale), currency-id validation,
+  shop currency parsing (never Vault for a broken MultiCurrency id), atomic journal write.
+- **Integration tests**: none separate from the above (no MockBukkit in this project); the end-to-end behaviour was
+  covered on the real server instead.
+- **Real server + bots (2026-09-11)** — designated local test server "Survival SMP Purpur 26.2 test" (Purpur 26.2 build
+  2632, CMI 9.8.9.10 economy via Vault 1.7.3-CMI, MultiCurrency 1.0.0 on SQLite, Jobs, LuckPerms, WorldGuard, PAPI,
+  MMOItems, ViaVersion/ViaBackwards, …). Two offline-mode Mineflayer bots (MCBotA/MCBotB, protocol 26.1 via
+  ViaBackwards) drove the real GUIs; balances checked with `/cbal` and the MultiCurrency ledger (`/currency history`).
+  - Load: MultiCurrency now enables before DynamicShop (softdepend); `'MultiCurrency' Found`; no DynamicShop
+    warnings/errors on enable or disable. `vault-info` → Economy: CMIEconomy (DynamicShop does not register one).
+  - Buy 1 diamond (10 gems): 100→90, +1. Buy 2: →70, +2. Sell 1 (7.5 → 7, 0 decimals): →77. Coins (2 decimals):
+    2.50 charged exactly (95.50→93.00). Insufficient (5 gems, price 10): refused, no item, balance unchanged.
+  - Burst: 25 gems, 5 rapid buy clicks → exactly 2 bought, 2 "not enough" (5th click dropped client-side), balance 5,
+    +2 diamonds; ledger shows exactly two withdraws.
+  - Finite stock 5 → bought 4 (40 gems), stock 1 (the existing "keep 1" rule).
+  - Vault/CMI shop on the same server: bought for 1.00, CMI 1000.00→999.00 — unchanged behaviour.
+  - Disconnect right after the buy click: charged once, item delivered before the quit was processed and kept on rejoin.
+  - Restart recovery with a crafted journal: PENDING buy → charged 10 once → delivered on join; PENDING sell → paid 7
+    once; PENDING buy the player can't afford → cancelled, not charged; GIVING → REVIEW + SEVERE log, not delivered;
+    OWE_ITEMS with an unreadable item → refunded with the refund key on join. Then the "paid but crashed before
+    recording" case: the same buy re-marked PENDING with its original key → resent → resolved as already paid, **no
+    second withdraw in the ledger**, delivered exactly once, nothing more on rejoin.
+  - A deliberately broken journal (bad YAML structure) was handled: entries logged as invalid, `.bak` copy kept.
+  - Shop GUI titles and start-page button names checked in the exact component data the server sends the client:
+    plain (dark_aqua), legacy green/gold, `#FF5555`, `#FF5555`/`#00FFAA`/`#7289DA` in one name, hex+bold, hex+italic,
+    gradient per letter, mixed segments, malformed name shown as literal text with no click/hover event; button names
+    not italic unless asked. An unknown currency (`MultiCurrency:does_not_exist`) refuses to open with a clear message.
+  - The user's own client was also connected during the test and opened `/ds`; pixel-level visual confirmation by a
+    human is not recorded here.
+- **Not tested**: a real `OUTCOME_UNKNOWN` from MultiCurrency's database (cannot be injected from outside without
+  changing MultiCurrency; covered by unit tests + the restart simulation); MultiCurrency on MariaDB; Folia (MultiCurrency
+  doesn't support it).
+
+### Final regression pass (2026-09-12)
+- **`&` false positives fixed** (`ShopNameFormatter.toMiniMessage`): an `&` glued between a letter/digit of normal text
+  and an UPPER-case letter is literal text (`R&D Shop`, `A&B Shop`, `M&M`, `Fish&Chips`); `& ` was already literal.
+  Unchanged: codes at the start / after a space / after another code (`&AGreen`, `&c&LBold`), lower-case codes glued to
+  text (`Red&aGreen`), digits, `&#RRGGBB`, `&x&…`, `§` (never text), MiniMessage.
+- **Change Lore colours fixed**: start-page button lore (`/ds` → shift + right-click a button → Change Lore; stored by
+  `OnChat` as `"§f" + input`, split by `Options.LineBreak`) now goes through the same `ShopNameFormatter`
+  (`formatLore`) as Rename, including the admin hint lines (legacy `§` codes, rendered the same as before).
+  Note: `/` is the default lore *line separator*, so a MiniMessage closing tag (`</gradient>`) inside lore splits the
+  line — tags auto-close at the end of each line anyway, so just omit the closing tag (pre-existing LineBreak rule).
+- **Automated**: `mvn clean verify` → 38 tests, 0 failures (5 new: `&` in normal text, legit legacy/hex codes next to
+  text, Change Lore formatting, malformed lore, existing plain/legacy lore unchanged).
+- **Real server** (same designated server, new 3.24.0 build deployed and verified by jar hash, Mineflayer bots):
+  `/ds` start page — names and lore for plain, legacy, hex, 3 hex colours in one line, hex+bold, italic+underline,
+  strikethrough+obfuscated, gradient, 3-line lore, `R&D & More` / `A&B Shop` / `Shop & More` as plain text,
+  malformed lore shown as text with no click/hover event. Shop GUI titles `R&D Shop`, `A&B Shop`, `Shop & More`
+  plain (dark_aqua). The real Change Lore editor (GUI + chat input) was driven by a bot with the edit permission:
+  `&aGreen &#FF5555Hex&lBold/R&D & More/&#00FFAA&oMint italic/<click:…>Evil</click> <bold &z` rendered correctly,
+  no events. Regression: MultiCurrency buy (70→60 gems, +1), CMI/Vault buy (999.00→998.00), finite stock 5 → 4 bought
+  → stock 1, restart recovery (pending buy charged once and delivered on join; unaffordable pending buy cancelled,
+  not charged), duplicate protection (same key re-sent after a simulated crash → no second withdraw in the
+  MultiCurrency ledger, item delivered exactly once, nothing on rejoin). No DynamicShop errors in the log.
+- **`/shop`**: the released 3.23.1 jar (pre-3.24.0) was deployed on the same server and behaves identically (`/ds shop`
+  opens the start page, `/shop` opens nothing for the bots) → **pre-existing, out of scope, left untouched**.
+- The sell-side crash window below is unchanged (documented, not redesigned in this pass).
+
+### Known limitations / risks
+- Unresolved (unknown) orders keep their stock reservation until resolved; stock/limit reservations are only given back
+  for orders placed in the same server run (after a restart we can't know if the reservation reached the shop file).
+- Crash windows that cannot be closed without MultiCurrency/Bukkit changes: a sell crash between `saveData()` and the
+  journal write (same tick, milliseconds) loses the items unrecorded; a crash while items are being given → `REVIEW`
+  (admin decides). Both are logged or bounded, never silent double payment/delivery.
+- The journal (fsync) and `player.saveData()` are written on the main thread per MultiCurrency trade — fine for normal
+  shop traffic, worth watching on very busy servers.
+- A payout (`account transfer`) checks the shop balance when issued, not when MultiCurrency confirms.
+- A sell confirmed while the player is offline skips the per-player trade-limit record and the Bukkit event.
+- `ShopSettings` has no MultiCurrency button (use the command).
+- `&` + a lower-case colour letter or a digit glued to text is still a colour code (`Red&aGreen`, `Buy 1&2` → `&2`),
+  matching classic legacy behaviour; only the upper-case-after-a-word case (`R&D`) is treated as text.
+- `/shop` does not open the start page for the test bots while `/ds` and `/ds shop` do — confirmed pre-existing (the
+  released 3.23.1 behaves the same); not investigated further.
+
+### Test server state left behind
+Final 3.24.0 jar deployed as `plugins/DynamicShop-3.24.0.jar` (hash matches the build; the previous
+`DynamicShop-3.22.0.jar` was removed, it is on the 3.22.0 GitHub release). Test fixtures kept for a manual look: shops
+`Title*.yml` (incl. `TitleRD`, `TitleAB`, `TitleMore`), `MCGems.yml`, `MCCoins.yml`, `MCBroken.yml` in
+`plugins/DynamicShop/Shop/`, and a test `Startpage.yml` with coloured lore (original saved next to it as
+`Startpage.yml.pre-colour-test`). Delete those and restore the original start page when done. Bots removed from the
+whitelist and their temporary edit permission removed; crafted journal entries and journal backups removed. Bot MultiCurrency/CMI balances remain in those plugins'
+data (like MultiCurrency's own earlier bot test).
+
+### Next steps
+1. Optional human visual check of `/ds` colours on the test server, then remove the fixtures.
+2. Commit, push, tag `3.24.0` (see "Releasing" in CLAUDE.md; `RELEASE_NOTES.md` is written).
+3. Possible follow-ups: MultiCurrency button in ShopSettings; the pre-existing `/shop` start-page behaviour.
+
+---
+
 ## Current effort (started 2026-09-08): MC 26.2 upgrade + Folia support + Jobs hook + bugfixes
 
 Goal, in the user's words: upgrade to latest game version (26.2), bring back the Jobs Reborn points hook, fix visible bugs, support Paper + Purpur + Folia (and popular Vault-compatible economy plugins), document what's new vs upstream in README, commit/push/build a release, test on the local test servers.

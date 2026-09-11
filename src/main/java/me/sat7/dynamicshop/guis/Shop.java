@@ -3,12 +3,16 @@ package me.sat7.dynamicshop.guis;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.regex.Pattern;
+import java.math.RoundingMode;
 
 import me.sat7.dynamicshop.DynaShopAPI;
 import me.sat7.dynamicshop.constants.Constants;
+import me.sat7.dynamicshop.economyhook.MultiCurrencyHook;
 import me.sat7.dynamicshop.economyhook.PlayerpointHook;
 import me.sat7.dynamicshop.models.DSItem;
 import me.sat7.dynamicshop.utilities.*;
+import net.kyori.adventure.text.Component;
+import net.kyori.adventure.text.format.NamedTextColor;
 import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
 import org.bukkit.Material;
@@ -23,6 +27,7 @@ import org.bukkit.inventory.meta.ItemMeta;
 import me.sat7.dynamicshop.DynamicShop;
 import me.sat7.dynamicshop.economyhook.JobsHook;
 import me.sat7.dynamicshop.transactions.Calc;
+import me.sat7.dynamicshop.transactions.MultiCurrencyTrade;
 
 import static me.sat7.dynamicshop.constants.Constants.P_ADMIN_SHOP_EDIT;
 import static me.sat7.dynamicshop.utilities.LangUtil.n;
@@ -64,6 +69,10 @@ public final class Shop extends InGameUI
             player.sendMessage(DynamicShop.dsPrefix(player) + t(player, "ERR.PLAYER_POINTS_NOT_FOUND"));
             return null;
         }
+        if (ShopUtil.IsMultiCurrency(ShopUtil.GetCurrency(shopData)) && MultiCurrencyTrade.CheckCanTrade(player, ShopUtil.GetCurrency(shopData)) == null)
+        {
+            return null; // MultiCurrency missing or currency unknown/disabled (message already sent)
+        }
 
         this.player = player;
         this.shopName = shopName;
@@ -75,8 +84,11 @@ public final class Shop extends InGameUI
 
         UserUtil.userInteractItem.put(player.getUniqueId(), shopName + "/" + this.page);
 
-        String uiName = shopData.getBoolean("Options.enable", true) ? "" : t(player, "SHOP.DISABLED");
-        uiName += "§3" + shopData.getString("Options.title", shopName);
+        String disabledPrefix = shopData.getBoolean("Options.enable", true) ? "" : t(player, "SHOP.DISABLED");
+        Component uiName = Component.empty()
+                .append(ShopNameFormatter.format(disabledPrefix, false))
+                .append(Component.empty().color(NamedTextColor.DARK_AQUA)
+                        .append(ShopNameFormatter.format(shopData.getString("Options.title", shopName), ConfigUtil.GetUseHexColorCode())));
         inventory = Bukkit.createInventory(player, 54, uiName);
 
         CreateCloseButton(player, CLOSE);
@@ -87,6 +99,16 @@ public final class Shop extends InGameUI
         FillBackgroundColor();
 
         return inventory;
+    }
+
+    // MultiCurrency shops show prices in that currency's own format, rounded the way they are charged (buy: up)
+    // or paid out (sell: down). Every other currency keeps the existing number format.
+    private String Price(double value, boolean isIntTypeCurrency, boolean buy)
+    {
+        String currency = ShopUtil.GetCurrency(shopData);
+        if (ShopUtil.IsMultiCurrency(currency))
+            return MultiCurrencyHook.FormatAmount(ShopUtil.GetMultiCurrencyId(currency), value, buy ? RoundingMode.CEILING : RoundingMode.FLOOR);
+        return n(value, isIntTypeCurrency);
     }
 
     @Override
@@ -244,12 +266,12 @@ public final class Shop extends InGameUI
                     {
                         if(shopData.contains(s + ".discount"))
                         {
-                            String original = n(buyPrice * 100 / (double) (100 - shopData.getInt(s + ".discount")),isIntTypeCurrency);
-                            buyText = t(player, "SHOP.BUY_PRICE_DISCOUNTED" + currencyKey).replace("{num}", original).replace("{num2}", n(buyPrice,isIntTypeCurrency));
+                            String original = Price(buyPrice * 100 / (double) (100 - shopData.getInt(s + ".discount")), isIntTypeCurrency, true);
+                            buyText = t(player, "SHOP.BUY_PRICE_DISCOUNTED" + currencyKey).replace("{num}", original).replace("{num2}", Price(buyPrice, isIntTypeCurrency, true));
                         }
                         else
                         {
-                            buyText = t(player, "SHOP.BUY_PRICE" + currencyKey).replace("{num}", n(buyPrice,isIntTypeCurrency));
+                            buyText = t(player, "SHOP.BUY_PRICE" + currencyKey).replace("{num}", Price(buyPrice, isIntTypeCurrency, true));
                         }
                         buyText += showValueChange ? " " + valueChanged_Buy : "";
                     }
@@ -258,12 +280,12 @@ public final class Shop extends InGameUI
                     {
                         if(shopData.contains(s + ".discount"))
                         {
-                            String original = n(sellPrice * 100 / (double) (100 - shopData.getInt(s + ".discount")),isIntTypeCurrency);
-                            sellText = t(player, "SHOP.SELL_PRICE_DISCOUNTED" + currencyKey).replace("{num}", original).replace("{num2}", n(sellPrice,isIntTypeCurrency));
+                            String original = Price(sellPrice * 100 / (double) (100 - shopData.getInt(s + ".discount")), isIntTypeCurrency, false);
+                            sellText = t(player, "SHOP.SELL_PRICE_DISCOUNTED" + currencyKey).replace("{num}", original).replace("{num2}", Price(sellPrice, isIntTypeCurrency, false));
                         }
                         else
                         {
-                            sellText = t(player, "SHOP.SELL_PRICE" + currencyKey).replace("{num}", n(sellPrice,isIntTypeCurrency));
+                            sellText = t(player, "SHOP.SELL_PRICE" + currencyKey).replace("{num}", Price(sellPrice, isIntTypeCurrency, false));
                         }
                         
                         sellText += showValueChange ? " " + valueChanged_Sell : "";
@@ -467,6 +489,8 @@ public final class Shop extends InGameUI
                     temp = n(ShopUtil.getShopBalance(shopName), true) + t(player,"PLAYER_POINTS");
                 else if (ShopUtil.GetCurrency(shopData).equalsIgnoreCase(Constants.S_EXP))
                     temp = n(ShopUtil.getShopBalance(shopName), true) + t(player,"EXP_POINTS");
+                else if (ShopUtil.IsMultiCurrency(ShopUtil.GetCurrency(shopData)))
+                    temp = MultiCurrencyHook.FormatAmount(ShopUtil.GetMultiCurrencyId(ShopUtil.GetCurrency(shopData)), ShopUtil.getShopBalance(shopName), RoundingMode.FLOOR);
                 else
                     temp = n(ShopUtil.getShopBalance(shopName));
 

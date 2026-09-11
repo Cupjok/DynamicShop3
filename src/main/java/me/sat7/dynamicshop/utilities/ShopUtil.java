@@ -1021,6 +1021,8 @@ public final class ShopUtil
         return new String[]{topShopName, Integer.toString(tradeIdx)};
     }
 
+    private static final Map<String, Integer> multiCurrencyIndex = new java.util.concurrent.ConcurrentHashMap<>();
+
     public static String[] FindTheBestShopToBuy(Player player, ItemStack itemStack)
     {
         String topShopName = "";
@@ -1120,6 +1122,11 @@ public final class ShopUtil
                 else if (ShopUtil.GetCurrency(data).equalsIgnoreCase(Constants.S_EXP))
                 {
                     tempCurrencyIndex = 3;
+                }
+                else if (IsMultiCurrency(ShopUtil.GetCurrency(data)))
+                {
+                    // each MultiCurrency currency is its own currency (never grouped with Vault or each other)
+                    tempCurrencyIndex = 4 + multiCurrencyIndex.computeIfAbsent(ShopUtil.GetCurrency(data), k -> multiCurrencyIndex.size());
                 }
 
                 if (currencyInt == -1)
@@ -1740,9 +1747,29 @@ public final class ShopUtil
         {
             return Constants.S_JOBPOINT;
         }
+        else if (IsMultiCurrency(temp))
+        {
+            // Never falls back to Vault: a shop configured for MultiCurrency must not silently charge Vault money.
+            return Constants.S_MULTICURRENCY_PREFIX + GetMultiCurrencyId(temp);
+        }
         else
         {
             return Constants.S_VAULT;
         }
+    }
+
+    /** True for "MultiCurrency:<id>" (any case). The id may still be invalid/unknown; check before trading. */
+    public static boolean IsMultiCurrency(String currency)
+    {
+        String prefix = Constants.S_MULTICURRENCY_PREFIX;
+        return currency != null && currency.length() >= prefix.length() && currency.regionMatches(true, 0, prefix, 0, prefix.length());
+    }
+
+    /** "MultiCurrency:Gems" -> "gems". MultiCurrency ids are case-insensitive and normalised to lower case. */
+    public static String GetMultiCurrencyId(String currency)
+    {
+        if (!IsMultiCurrency(currency))
+            return "";
+        return currency.substring(Constants.S_MULTICURRENCY_PREFIX.length()).trim().toLowerCase(java.util.Locale.ROOT);
     }
 }

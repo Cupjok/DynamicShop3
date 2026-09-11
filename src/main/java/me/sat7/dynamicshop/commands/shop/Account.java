@@ -7,6 +7,7 @@ import me.sat7.dynamicshop.constants.Constants;
 import me.sat7.dynamicshop.economyhook.PlayerpointHook;
 import me.sat7.dynamicshop.files.CustomConfig;
 import me.sat7.dynamicshop.economyhook.JobsHook;
+import me.sat7.dynamicshop.transactions.MultiCurrencyTrade;
 import me.sat7.dynamicshop.utilities.ShopUtil;
 import net.milkbowl.vault.economy.Economy;
 import net.milkbowl.vault.economy.EconomyResponse;
@@ -249,6 +250,11 @@ public class Account extends DSCMD
                             shopData.save();
 
                             sender.sendMessage(DynamicShop.dsPrefix(sender) + t(sender, "MESSAGE.TRANSFER_SUCCESS"));
+                        }
+                        else if (ShopUtil.IsMultiCurrency(ShopUtil.GetCurrency(shopData)))
+                        {
+                            // async idempotent deposit; the shop balance is reduced once it is applied
+                            MultiCurrencyTrade.SubmitPayout(sender, target, args[1], ShopUtil.GetCurrency(shopData), amount);
                         }
                         else
                         {

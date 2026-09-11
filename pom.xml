@@ -6,7 +6,7 @@
 
     <groupId>me.sat7</groupId>
     <artifactId>DynamicShop</artifactId>
-    <version>3.23.1</version>
+    <version>3.24.0</version>
     <packaging>jar</packaging>
 
     <name>DynamicShop</name>
@@ -114,6 +114,14 @@
             <id>rosewood-repo</id>
             <url>https://repo.rosewooddev.io/repository/public/</url>
         </repository>
+        <!-- In-repo Maven repository holding the released MultiCurrency public API jar
+             (MultiCurrency-API-1.0.0.jar from the v1.0.0 GitHub release of Cupjok/MultiCurrency).
+             MultiCurrency is not published to a public Maven repository, so it is vendored here
+             to keep local and CI builds reproducible. Compile-only (provided): never shaded. -->
+        <repository>
+            <id>dynamicshop-local-lib</id>
+            <url>file://${project.basedir}/lib</url>
+        </repository>
     </repositories>
 
     <dependencies>
@@ -181,6 +189,12 @@
             <groupId>com.github.PikaMug</groupId>
             <artifactId>LocaleLib</artifactId>
             <version>4.1.5</version>
+        </dependency>
+        <dependency>
+            <groupId>me.cupjok.multicurrency</groupId>
+            <artifactId>multicurrency-api</artifactId>
+            <version>1.0.0</version>
+            <scope>provided</scope>
         </dependency>
         <dependency>
             <groupId>org.black_ixx</groupId>

@@ -31,6 +31,13 @@ public final class Buy
 
     public static void buy(String currency, Player player, String shopName, String tradeIdx, ItemStack itemStack, double priceSum, boolean infiniteStock)
     {
+        // MultiCurrency: asynchronous, atomic withdraw + idempotent retries; items only after the payment is applied.
+        if (ShopUtil.IsMultiCurrency(currency))
+        {
+            MultiCurrencyTrade.Buy(currency, player, shopName, tradeIdx, itemStack, priceSum, infiniteStock);
+            return;
+        }
+
         Economy econ = null;
         CustomConfig data = ShopUtil.shopConfigFiles.get(shopName);
 
@@ -261,6 +268,11 @@ public final class Buy
 
     private static void RunBuyCommand(CustomConfig data, Player player, String shopName, ItemStack tempIS, int actualAmount, double priceSum)
     {
+        RunBuyCommand(data, player.getName(), shopName, tempIS, actualAmount, priceSum);
+    }
+
+    static void RunBuyCommand(CustomConfig data, String playerName, String shopName, ItemStack tempIS, int actualAmount, double priceSum)
+    {
         if (data.get().contains("Options.command.active") && data.get().getBoolean("Options.command.active") &&
                 data.get().contains("Options.command.buy"))
         {
@@ -271,7 +283,7 @@ public final class Buy
                 for (Map.Entry<String, Object> s : data.get().getConfigurationSection("Options.command.buy").getValues(false).entrySet())
                 {
                     String buyCmd = s.getValue().toString()
-                            .replace("{player}", player.getName())
+                            .replace("{player}", playerName)
                             .replace("{shop}", shopName)
                             .replace("{itemType}", tempIS.getType().toString())
                             .replace("{amount}", String.valueOf(actualAmount))

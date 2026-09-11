@@ -80,11 +80,63 @@ Shop data lives in per-shop YAML files (via `CustomConfig`), not a database. `Op
 
 ### Currencies / economy hooks
 
-Four currency backends, dispatched by `Options.currency` per shop:
+Five currency backends, dispatched by `Options.currency` per shop:
 - `vault` — Vault `Economy` service (see below for the fork-compatibility nuance)
 - `exp` — player XP points, no external plugin needed
 - `pp` — PlayerPoints plugin (`economyhook/PlayerpointHook.java`, guarded by `PlayerpointHook.isPPActive`)
 - `jp` — Jobs (Jobs Reborn) points (`economyhook/JobsHook.java`, guarded by `JobsHook.jobsRebornActive`)
+- `MultiCurrency:<id>` — one currency of the MultiCurrency plugin (see "MultiCurrency integration" below)
+
+Everywhere a shop's currency is branched on, the final `else` means Vault. A MultiCurrency shop must never
+reach that `else`: `ShopUtil.GetCurrency()` returns `MultiCurrency:<id>` (never Vault) for it, and every
+branch site has an explicit `ShopUtil.IsMultiCurrency(...)` case. Add one when you add a new branch site.
+
+### MultiCurrency integration
+
+Optional (`softdepend: MultiCurrency`). DynamicShop talks to MultiCurrency **only** through the released public
+API `me.cupjok.multicurrency:multicurrency-api` (vendored as `lib/.../multicurrency-api-1.0.0.jar`, `provided`
+scope, taken unmodified from the MultiCurrency v1.0.0 GitHub release). Never touch its database, its
+implementation classes or its config, and never change the MultiCurrency project from here.
+
+- `economyhook/MultiCurrencyHook` — no API types; safe to load without MultiCurrency. Guard flag
+  `multiCurrencyActive`, currency lookup, `BigDecimal` conversion (`ToAmount`: CEILING for charges, FLOOR for
+  payouts, never more decimals than the currency's scale — MultiCurrency rejects excess precision), display-only
+  balance cache.
+- `economyhook/MultiCurrencyBridge` — the only class importing the API. Only reached after the guard.
+- `transactions/MultiCurrencyTrade` — buy/sell/payout flow + journal; `MultiCurrencyOrder` — one order;
+  `MultiCurrencyOutcome` — classifies a `TransactionResult`.
+
+Transaction rules (do not weaken):
+1. **No balance check before charging.** `Buy` for MultiCurrency shops runs the quantity/stock/limit loop without
+   the balance condition and calls `withdraw` once; `INSUFFICIENT_FUNDS` is the rejection. Never add a
+   `has()`/`balance()` pre-check (check-then-act). `balance()` is used for GUI display only.
+2. **Write-ahead journal.** Every order gets a UUID when the player clicks and is written to
+   `plugins/DynamicShop/MultiCurrencyOrders.yml` (temp file + fsync + atomic rename) *before* the first API call.
+   Idempotency key = `dynamicshop3:<buy|sell|refund|payout>:<uuid>`. Retries — quick retries, the 60 s resolver
+   and restarts — always resend the same key. Refunds use their own key (`refund`) derived from the order's UUID.
+3. **OUTCOME_UNKNOWN is never a failure.** `MultiCurrencyOutcome.Classify`: success/`DUPLICATE_TRANSACTION` =
+   applied; `OUTCOME_UNKNOWN`/exception = unknown (retry same key); on a first attempt any other reason = not
+   applied; after a possible earlier commit only `INSUFFICIENT_FUNDS`/`BALANCE_LIMIT_EXCEEDED` (checked inside
+   MultiCurrency's DB transaction after its key lookup) settle it, confirmed by looking the key up in `history()`.
+4. **Items only after a definitive APPLIED.** States: `PENDING` → `OWE_ITEMS` (buy paid / sell not paid) →
+   `GIVING` (written before items are handed out) → removed. A `GIVING` entry found at startup becomes `REVIEW`
+   (logged SEVERE, never re-given automatically). Owed items are delivered on join if the player was offline.
+5. **Sells take the items first** and call `player.saveData()` before depositing, so a crash can never leave the
+   player with both. A refused deposit gives the items back.
+6. Futures complete on a MultiCurrency DB thread: hop back with `SchedulerUtil.runGlobal`/`runForEntity` before
+   touching Bukkit or the journal. MultiCurrency does not support Folia, so this path is Paper/Purpur only.
+
+### Shop-name formatting
+
+Shop titles (`Options.title`), the start page title, start-page button names and button lore (Change Lore) go through
+`utilities/ShopNameFormatter` → Adventure `Component` (Paper's `Bukkit.createInventory(holder, size, Component)`
+and `ItemMeta.displayName(Component)`). Accepted: `&`/`§` legacy codes, `&#RRGGBB`, `&x&R&R&G&G&B&B`, bare
+`#RRGGBB` (only when `UI.UseHexColorCode` is on, same rule as `LangUtil`), and MiniMessage **visual** tags only
+(colour, decorations, gradient, rainbow, transition, reset). Click/hover/insert/font/keybind/translatable/
+selector/score/nbt/newline tags are not registered (they stay literal text) and `sanitize()` strips any
+interactive style anyway. Malformed input falls back to plain text and never throws. An `&` between a letter/digit of
+normal text and an upper-case letter is text, not a code (`R&D Shop`); keep regression tests for this. Don't widen the tag
+resolver; don't use this formatter for internal shop *file* names (they are lookup keys).
 
 **Vault compatibility:** don't gate on `getPluginManager().getPlugin("Vault") != null` — several popular drop-in replacements (VaultUnlocked, CMIVault) register the standard `net.milkbowl.vault.economy.Economy` service via Bukkit's `ServicesManager` without necessarily existing under the exact plugin name "Vault". The only correct check is whether `getServicesManager().getRegistration(Economy.class)` resolves (see `DynamicShop.SetupRSP()`, which retries a few times on enable to allow for load-order races). `Vault` is a **softdepend**, not a hard `depend`, for the same reason.
 

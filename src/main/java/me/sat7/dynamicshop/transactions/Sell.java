@@ -97,6 +97,18 @@ public final class Sell
         double[] calcResult = Calc.calcTotalCost(shopName, String.valueOf(tradeIdx), -tradeAmount);
         priceSum += calcResult[0];
 
+        // MultiCurrency: items are taken now, the payout is an idempotent async deposit (items returned if it fails).
+        if (ShopUtil.IsMultiCurrency(currencyType))
+        {
+            if (player == null)
+                return 0;
+
+            final int amount = tradeAmount;
+            return MultiCurrencyTrade.SubmitSell(player, currencyType, shopName, tradeIdx, itemStack, amount, priceSum, calcResult[1],
+                    stockOld > 0, sellLimit != Integer.MIN_VALUE, false, playSound ? "orb" : null,
+                    () -> RemoveQuickSellItems(player, itemStack, amount, isShiftClick, slot), priceBuyOld, priceSellOld, stockOld);
+        }
+
         // 계산된 비용에 대한 처리 시도
         Economy econ = DynamicShop.getEconomy();
         if (!CheckTransactionSuccess(currencyType, player, priceSum))
@@ -108,49 +120,7 @@ public final class Sell
         // 플레이어 인벤토리에서 아이템 제거
         if (player != null)
         {
-            if (isShiftClick)
-            {
-                int tempCount = 0;
-                for (ItemStack item : player.getInventory().getStorageContents())
-                {
-                    if (item == null)
-                        continue;
-
-                    if (item.isSimilar(itemStack))
-                    {
-                        if (tempCount + item.getAmount() > tradeAmount)
-                        {
-                            int itemLeft = item.getAmount() - (tradeAmount - tempCount);
-                            if (itemLeft <= 0)
-                            {
-                                player.getInventory().removeItem(item);
-                            }
-                            else
-                            {
-                                item.setAmount(itemLeft);
-                            }
-                            break;
-                        }
-                        else
-                        {
-                            player.getInventory().removeItem(item);
-                        }
-
-                        tempCount += item.getAmount();
-                    }
-                }
-            }
-            else
-            {
-                int itemAmountOld = player.getInventory().getItem(slot).getAmount();
-                int itemLeft = itemAmountOld - tradeAmount;
-
-                if (itemLeft <= 0)
-                    player.getInventory().setItem(slot, null);
-                else
-                    player.getInventory().getItem(slot).setAmount(itemLeft);
-            }
-
+            RemoveQuickSellItems(player, itemStack, tradeAmount, isShiftClick, slot);
             player.updateInventory();
         }
 
@@ -204,6 +174,54 @@ public final class Sell
         }
 
         return priceSum;
+    }
+
+    // Removes the sold items from the player's inventory (quick sell / shift-click rules). Shared by the
+    // Vault/Exp/points path and the MultiCurrency path.
+    private static void RemoveQuickSellItems(Player player, ItemStack itemStack, int tradeAmount, boolean isShiftClick, int slot)
+    {
+        if (isShiftClick)
+        {
+            int tempCount = 0;
+            for (ItemStack item : player.getInventory().getStorageContents())
+            {
+                if (item == null)
+                    continue;
+
+                if (item.isSimilar(itemStack))
+                {
+                    if (tempCount + item.getAmount() > tradeAmount)
+                    {
+                        int itemLeft = item.getAmount() - (tradeAmount - tempCount);
+                        if (itemLeft <= 0)
+                        {
+                            player.getInventory().removeItem(item);
+                        }
+                        else
+                        {
+                            item.setAmount(itemLeft);
+                        }
+                        break;
+                    }
+                    else
+                    {
+                        player.getInventory().removeItem(item);
+                    }
+
+                    tempCount += item.getAmount();
+                }
+            }
+        }
+        else
+        {
+            int itemAmountOld = player.getInventory().getItem(slot).getAmount();
+            int itemLeft = itemAmountOld - tradeAmount;
+
+            if (itemLeft <= 0)
+                player.getInventory().setItem(slot, null);
+            else
+                player.getInventory().getItem(slot).setAmount(itemLeft);
+        }
     }
 
     public static void sell(String currency, Player player, String shopName, String tradeIdx, ItemStack itemStack, double priceSum, boolean infiniteStock)
@@ -263,6 +281,17 @@ public final class Sell
         // 비용 계산
         double[] calcResult = Calc.calcTotalCost(shopName, tradeIdx, -tradeAmount);
         priceSum += calcResult[0];
+
+        // MultiCurrency: items are taken now, the payout is an idempotent async deposit (items returned if it fails).
+        if (ShopUtil.IsMultiCurrency(currency))
+        {
+            ItemStack delete = new ItemStack(itemStack);
+            delete.setAmount(tradeAmount);
+            MultiCurrencyTrade.SubmitSell(player, currency, shopName, tradeIdxInt, itemStack, tradeAmount, priceSum, calcResult[1],
+                    !infiniteStock, tradeLimitPerPlayer != Integer.MIN_VALUE, true, "sell",
+                    () -> player.getInventory().removeItem(delete), priceBuyOld, priceSellOld, stockOld);
+            return;
+        }
 
         // 계산된 비용에 대한 처리 시도
         Economy econ = DynamicShop.getEconomy();
@@ -389,6 +418,11 @@ public final class Sell
 
     private static void RunSellCommand(CustomConfig data, Player player, String shopName, ItemStack tempIS, int actualAmount, double priceSum, double tax)
     {
+        RunSellCommand(data, player.getName(), shopName, tempIS, actualAmount, priceSum, tax);
+    }
+
+    static void RunSellCommand(CustomConfig data, String playerName, String shopName, ItemStack tempIS, int actualAmount, double priceSum, double tax)
+    {
         if (data.get().contains("Options.command.active") && data.get().getBoolean("Options.command.active") &&
                 data.get().contains("Options.command.sell"))
         {
@@ -400,7 +434,7 @@ public final class Sell
                 for (Map.Entry<String, Object> s : data.get().getConfigurationSection("Options.command.sell").getValues(false).entrySet())
                 {
                     String sellCmd = s.getValue().toString()
-                            .replace("{player}", player.getName())
+                            .replace("{player}", playerName)
                             .replace("{shop}", shopName)
                             .replace("{itemType}", tempIS.getType().toString())
                             .replace("{amount}", String.valueOf(actualAmount))
