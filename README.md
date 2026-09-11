@@ -1,8 +1,21 @@
-# DynamicShop3
+# 🛒 DynamicShop3
 
-A powerful and customizable dynamic shop plugin for modern Minecraft servers.
+<p align="center">
+  <img src="banner.png" alt="DynamicShop3">
+</p>
 
-DynamicShop3 provides a complete GUI shop system with dynamic pricing, configurable shops, multiple economy integrations, shop rotations, and Folia support.
+<p align="center">
+  <img src="https://img.shields.io/badge/Minecraft-1.16.5--26.2-green">
+  <img src="https://img.shields.io/badge/Paper-Purpur-Folia-blue">
+  <img src="https://img.shields.io/badge/Java-21%2B-orange">
+  <img src="https://img.shields.io/github/v/release/Cupjok/DynamicShop3">
+  <img src="https://img.shields.io/github/actions/workflow/status/Cupjok/DynamicShop3/ds.yml">
+  <img src="https://img.shields.io/badge/Fork%20by-Claude%20Code-orange">
+</p>
+
+<p align="center">
+  A powerful and customizable dynamic shop plugin for modern Minecraft servers.
+</p>
 
 > A maintained fork of DynamicShop with additional Minecraft version support, Folia compatibility, broader economy support, bug fixes, and new features.
 
