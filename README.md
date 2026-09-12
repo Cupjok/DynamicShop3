@@ -1,8 +1,8 @@
 # 🛒 DynamicShop3 Fork
 
 <p align="center">
-  <img src="https://img.shields.io/badge/Minecraft-1.16.5--26.2-green">
-  <img src="https://img.shields.io/badge/Java-21%2B-orange">
+  <img src="https://img.shields.io/badge/Minecraft-26.2-green">
+  <img src="https://img.shields.io/badge/Java-25%2B-orange">
   <img src="https://img.shields.io/github/v/release/Cupjok/DynamicShop3">
   <img src="https://img.shields.io/badge/Fork%20by-Claude%20Code-orange">
 </p>
@@ -38,14 +38,18 @@
 
 ### Minecraft Versions
 
-**1.16.5 – 26.2**
+**26.2** (Paper, Purpur and Folia)
+
+The current releases (3.22.0 and newer) only load on Minecraft 26.2. On older servers the plugin does not load: it is compiled for Java 25 and declares `api-version: 26.2`.
+
+Still on an older Minecraft version? [Release 3.21.7](https://github.com/Cupjok/DynamicShop3/releases/tag/3.21.7) is the last release built for Minecraft 1.21.x (Paper 1.21.8 API, Java 21). It does not include the newer features and fixes listed in this README, and it is no longer updated.
 
 ### Java
 
-- **Runtime:** Java 21+
+- **Running the server:** Java 25+
 - **Building from source:** Java 25+
 
-> Paper 26.2's API is compiled for Java 25, so Java 25+ is required when building from source.
+> Paper 26.2's API is compiled for Java 25, so both the server and the build need Java 25 or newer.
 
 ## 💰 Economy & Currency Support
 
@@ -53,7 +57,7 @@
 |---|---|---|---|
 | Vault-compatible Economy | Economy | Works with Vault API-compatible economy providers | [Vault](https://www.spigotmc.org/resources/vault.34315/) |
 | PlayerPoints | Points | Use PlayerPoints as a shop currency | [PlayerPoints](https://www.spigotmc.org/resources/playerpoints.80745/) |
-| Jobs Reborn | Points | Use Jobs Reborn points through the `jp` currency integration | [Jobs Reborn](https://www.spigotmc.org/resources/jobs-reborn.4216/) |
+| Jobs Reborn | Points | Use Jobs Reborn points as a shop currency (`JobPoint`) | [Jobs Reborn](https://www.spigotmc.org/resources/jobs-reborn.4216/) |
 | MultiCurrency | Currency | Use server-defined currencies such as Coins, Gems, and Tokens | [MultiCurrency](https://github.com/Cupjok/MultiCurrency) |
 
 MultiCurrency is optional and uses the plugin's public API with transaction protection and recovery for unfinished orders.
