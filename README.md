@@ -1,8 +1,7 @@
-# 🛒 DynamicShop3
+# 🛒 DynamicShop3 Fork
 
 <p align="center">
   <img src="https://img.shields.io/badge/Minecraft-1.16.5--26.2-green">
-  <img src="https://img.shields.io/badge/Paper-Purpur-Folia-blue">
   <img src="https://img.shields.io/badge/Java-21%2B-orange">
   <img src="https://img.shields.io/github/v/release/Cupjok/DynamicShop3">
   <img src="https://img.shields.io/badge/Fork%20by-Claude%20Code-orange">
