@@ -12,6 +12,7 @@ import me.sat7.dynamicshop.events.OnChat;
 import me.sat7.dynamicshop.files.CustomConfig;
 import me.sat7.dynamicshop.transactions.Buy;
 import me.sat7.dynamicshop.transactions.Sell;
+import me.sat7.dynamicshop.utilities.CommandItemUtil;
 import me.sat7.dynamicshop.utilities.ConfigUtil;
 import me.sat7.dynamicshop.utilities.HashUtil;
 import me.sat7.dynamicshop.utilities.UserUtil;
@@ -316,7 +317,8 @@ public final class ItemTrade extends InGameUI
 
     private void CreateTradeButtons()
     {
-        if (!sellBuyOnly.equalsIgnoreCase("BuyOnly"))
+        // 명령어 상품은 판매 불가 (플레이어가 가질 수 있는 아이템이 아님)
+        if (!sellBuyOnly.equalsIgnoreCase("BuyOnly") && !CommandItemUtil.IsCommandItem(shopData, tradeIdx))
             CreateTradeButtons(true);
         if (!sellBuyOnly.equalsIgnoreCase("SellOnly"))
             CreateTradeButtons(false);
@@ -515,6 +517,7 @@ public final class ItemTrade extends InGameUI
                 lore = lore.replaceFirst("\n", "");
 
             meta.setLore(new ArrayList<>(Arrays.asList(lore.split("\n"))));
+            CommandItemUtil.ApplyDisplay(meta, shopData, tradeIdx);
 
             itemStack.setItemMeta(meta);
             inventory.setItem(idx, itemStack);
@@ -541,6 +544,13 @@ public final class ItemTrade extends InGameUI
         if (permission != null && permission.length() > 0 && !player.hasPermission(permission) && !player.hasPermission(permission + ".buy"))
         {
             player.sendMessage(DynamicShop.dsPrefix(player) + t(player, "ERR.NO_PERMISSION"));
+            return;
+        }
+
+        // 명령어가 하나도 없는 명령어 상품은 구매해도 아무 일도 일어나지 않으므로 막음
+        if (CommandItemUtil.IsCommandItem(shopData, tradeIdx) && CommandItemUtil.GetCommands(shopData, tradeIdx).isEmpty())
+        {
+            player.sendMessage(DynamicShop.dsPrefix(player) + t(player, "CMD_ITEM.NOT_READY"));
             return;
         }
 

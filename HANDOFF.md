@@ -2,6 +2,83 @@
 
 Living session-continuity notes. Read `CLAUDE.md` first for the durable architecture reference — this file is the "what's actually going on right now" doc. Update it whenever you leave work mid-flight; trim it once things fully land and are verified (don't let it grow forever as a changelog — that's what git history / README are for).
 
+## Session 2026-09-13: command items (not committed, not released, not yet tested in-game)
+
+- Item settings (shop → Shift + right-click an item) → new **slot 51 "Item type"** (normal ↔ command; only for an item
+  already saved in that slot, otherwise `ITEM_SETTING.SAVE_FIRST`) and **slot 52** (opens the editor, command items only).
+- New `guis/CommandItemEditor` (UI_TYPE `CommandItemEditor`, `DynaShopAPI.openCommandItemEditor`): back (0) returns to
+  item settings with the unsaved values; preview (2); rename (3) / lore (4) via chat, right-click resets; add command (5);
+  help (8); commands in slots 9-53 (left = edit, right = delete, max 45). Chat input uses `userTempData = "waitforCmdItem"`
+  and hops back to the player's thread through `SchedulerUtil.runForEntity`; `cancel` aborts.
+- New `utilities/CommandItemUtil`. Shop file keys per item: `itemType: COMMAND`, `commands` (list), `cmdName`,
+  `cmdLore` (list). The shown item stays the lookup key; the name/lore override only touches display copies
+  (Shop, ItemTrade, buy message), so hashes/trade limits are unchanged. Names/lore go through `ShopNameFormatter`.
+- Buy (Vault/Exp/JP/PP in `Buy.buy`, MultiCurrency in `MultiCurrencyTrade.Deliver`): commands run from the console once
+  per unit instead of giving items; dispatched on the global thread. Buying a command item with no commands is
+  refused in `ItemTrade`. Selling is blocked in `ItemTrade` (no sell buttons), `Sell.sell`, `Sell.quickSellItem`
+  and `ShopUtil.FindTheBestShopToSell`.
+- 24 lang keys (ko-KR + en-US). Tests: `mvn clean verify` all green, new `CommandItemUtilTest` (5).
+- User tested command items in-game: works.
+- Also: `files/DefaultsSync` updates language/Layout defaults in existing files without touching customised values
+  (see CLAUDE.md "Localization"). The old QUICKSELL console banner in `DynamicShop.onEnable` was removed:
+  `QUICK_SELL.GUIDE_LORE` is now migrated automatically from its old en/ko default texts. The ko-KR default
+  still described the old click logic and was fixed. New `DefaultsSyncTest` (2).
+- `DefaultsSync` also applied to `Sound.yml` and `Worth_V2.yml`.
+- `CustomConfig` hardening (every plugin YAML, shop files included):
+  - `save()` is atomic (writes `<file>.tmp`, then moves it over the file).
+  - A file that exists but cannot be parsed is copied to `<file>.yml.broken-<time>`, logged SEVERE, and `save()` refuses
+    to overwrite it until it is fixed and reloaded. Before, a typo loaded as an empty config and the next save wiped
+    the shop.
+  - `ShopUtil.ReloadAllShop` and `RotationUtil` now only load `*.yml`, so backups/temp files never become shops.
+  - New `CustomConfigTest` (2).
+- **Real server test (2026-09-13, "Survival SMP Purpur 26.2 test", Mineflayer bot MCBotA, temporary op):**
+  - Command item (Vault): shop GUI shows the custom name (red, bold) and gradient lore. The trade view has no sell
+    buttons. Buying charged 5.00, ran both commands with {player}/{uuid}/{shop} filled, and did not give the item.
+  - A command item with no commands: purchase refused, not charged. Quick sell of the displayed item (PAPER) was
+    refused and the item kept.
+  - Editor via GUI: Shift + right-click → slot 51 → editor, add command, rename (hex + bold), lore (`\n`, gradient),
+    right-click delete, back to item settings. The file content is correct, and a buy used the new name and ran the
+    command.
+  - MultiCurrency command item: gems 10 → 7, command ran, no item, journal empty afterwards. With 0 gems: refused,
+    not charged.
+  - Regression: normal Vault item buy/sell in SampleShop unchanged, and stock was flushed correctly on stop.
+  - DefaultsSync: an old ko-KR `QUICK_SELL.GUIDE_LORE` updated automatically. The changed `CMD_ITEM.ENTER_COMMAND` was
+    updated in both lang files on the next start, with no repeat messages afterwards.
+  - Broken shop file: SEVERE log, `.broken-*` copy, file bytes unchanged, other shops fine. After the fix,
+    `/ds reload` loaded it.
+  - **Bugs found and fixed during the test:**
+    1. In "Add command", typing `/give …` ran the command on the admin instead of saving it. `OnChat` now intercepts
+       `PlayerCommandPreprocessEvent` while command input is pending, and the prompt text was updated.
+    2. Every restart made another identical `.broken-*` copy. An identical copy is now reused (`CustomConfigTest`).
+  - Cleanup: test shops (`CmdTest`, `CmdGems`, `BrokenTest` + copies) deleted, bot deopped and removed from the
+    whitelist, server stopped. The new jar stays deployed. The pre-test data backup was kept outside the repo.
+  - Known minor: the MultiCurrency buy message shows the base item name, not the command item's custom name.
+- **Upstream → this fork migration test (2026-09-13):**
+  - Upstream = `7sat/DynamicShop3`. The last source is v3.120.1 (`1f1870e`); the last Spigot release is **3.120.2**
+    (2024-07-30). Telesphoreo's fork wrote `3.20.2` in `pom.xml` and our tags continued from there, so **our 3.25.0 is
+    numerically lower than upstream 3.120.2** (a version-number issue only; the data is fine).
+  - Upstream jars (3.16.1 release, 3.120.1 built from source) do not load on MC 26.2: their bundled LocaleLib crashes.
+    Upstream users on 26.x must switch.
+  - Method: upstream 3.120.1 on Paper 1.21.1 (JDK 21) + CMI economy. Created 3 shops by console (flags, account,
+    shop hours, fluctuation, stock stabilizing, permission, buy command, background, log, Exp currency, disabled
+    shop, tax, default shop). Added discount, trade limits, SellOnly/BuyOnly, a deco item, customised lang/sound/config
+    and a start-page button. A bot added an enchanted, custom-named item with lore (1.21.1 ItemMeta). The data folder
+    was then copied to Purpur 26.2 with our jar.
+  - Result (`compare.py`, every key and value): everything kept. The only changes: `QUICK_SELL.GUIDE_LORE` (old
+    untouched default, migrated on purpose because the quick-sell click behaviour differs from upstream), stock moved
+    by the shop's own fluctuation timer, and 46 new lang keys added. Upstream `Options.currency` values are
+    lowercase (`exp`, `jobpoint`, ...) and map correctly.
+  - Side by side with the same bot steps: the diamond buy (discount 20% → 80.00, buy command ran) is identical on
+    upstream/1.21.1 and ours/26.2. On ours: the Exp shop buy works, the Excalibur buy gives the item with name, lore
+    and enchant intact, and the start-page button works. No errors.
+  - Seen on upstream only: an unparseable `Startpage.yml` is silently replaced with defaults (data lost). Ours now
+    keeps it and makes a `.broken-*` copy.
+  - Not tested: DynamicShop 2.x `Shop.yml` / config V2 (the conversion code is unchanged from upstream), the
+    Premium version (closed source), Jobs/PlayerPoints shops (plugins not installed), rotation data.
+- Rule added to CLAUDE.md: "User data safety (mandatory for every change)".
+- Released as **3.121.0**. The version jumps from 3.25.0 so that it is above upstream 3.120.2. Next versions continue
+  from 3.121.x.
+
 ## Session 2026-09-12 (after the 3.24.0 release): currency selector GUI — released as 3.25.0
 
 - New `guis/CurrencySelector` (UI_TYPE `CurrencySelector`, opened with `DynaShopAPI.openCurrencySelector`): shop

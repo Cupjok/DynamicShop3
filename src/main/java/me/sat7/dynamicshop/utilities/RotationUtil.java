@@ -214,7 +214,7 @@ public final class RotationUtil
 
         for (File f : listOfFiles)
         {
-            if (!f.getName().contains(shopName))
+            if (!f.getName().contains(shopName) || !f.getName().endsWith(".yml"))
                 continue;
 
             String[] temp = FilenameUtils.getBaseName(f.getName()).split("_");

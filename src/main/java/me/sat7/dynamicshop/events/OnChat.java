@@ -4,6 +4,7 @@ import io.papermc.paper.threadedregions.scheduler.ScheduledTask;
 import me.sat7.dynamicshop.DynamicShop;
 import me.sat7.dynamicshop.DynaShopAPI;
 import me.sat7.dynamicshop.files.CustomConfig;
+import me.sat7.dynamicshop.guis.CommandItemEditor;
 import me.sat7.dynamicshop.guis.StartPage;
 import me.sat7.dynamicshop.utilities.SchedulerUtil;
 import me.sat7.dynamicshop.utilities.ShopUtil;
@@ -14,7 +15,9 @@ import org.bukkit.configuration.file.FileConfiguration;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
+import org.bukkit.event.EventPriority;
 import org.bukkit.event.player.AsyncPlayerChatEvent;
+import org.bukkit.event.player.PlayerCommandPreprocessEvent;
 
 import java.util.Map;
 import java.util.UUID;
@@ -56,7 +59,7 @@ public class OnChat implements Listener
             {
                 UserUtil.userTempData.put(uuid, "");
                 player.sendMessage(DynamicShop.dsPrefix(player) + t(player, "MESSAGE.INPUT_CANCELED"));
-            } else if (userData.contains("waitForTradeUI"))
+            } else if (userData.contains("waitForTradeUI") || userData.equals("waitforCmdItem"))
             {
                 UserUtil.userTempData.put(uuid, "");
                 player.sendMessage(DynamicShop.dsPrefix(player) + t(player, "MESSAGE.INPUT_CANCELED"));
@@ -82,6 +85,25 @@ public class OnChat implements Listener
             task.cancel();
         }
         runnableMap.clear();
+    }
+
+    // 명령어 상품 편집 중 "/give ..." 처럼 슬래시로 입력하면 실행하지 않고 입력값으로 사용
+    @EventHandler(priority = EventPriority.LOWEST)
+    public void onPlayerCommand(PlayerCommandPreprocessEvent e)
+    {
+        Player p = e.getPlayer();
+        UUID uuid = p.getUniqueId();
+
+        if (!"waitforCmdItem".equals(UserUtil.userTempData.get(uuid)) || !CommandItemEditor.IsWaitingForCommand(uuid))
+            return;
+
+        e.setCancelled(true);
+
+        UserUtil.userTempData.put(uuid, "");
+        cancelRunnable(p);
+
+        String message = e.getMessage();
+        SchedulerUtil.runForEntity(p, () -> CommandItemEditor.OnChatInput(p, message), null);
     }
 
     @EventHandler
@@ -131,6 +153,16 @@ public class OnChat implements Listener
             UserUtil.userTempData.put(uuid, "");
             DynaShopAPI.openStartPage(p);
             cancelRunnable(p);
+        } else if (userData.equals("waitforCmdItem"))
+        {
+            e.setCancelled(true);
+
+            UserUtil.userTempData.put(uuid, "");
+            cancelRunnable(p);
+
+            // Chat is async: apply the input and reopen the editor on the player's own thread.
+            String message = e.getMessage();
+            SchedulerUtil.runForEntity(p, () -> CommandItemEditor.OnChatInput(p, message), null);
         } else if (userData.contains("waitForTradeUI"))
         {
             e.setCancelled(true);

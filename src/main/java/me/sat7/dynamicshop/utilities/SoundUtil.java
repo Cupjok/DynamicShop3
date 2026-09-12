@@ -48,6 +48,7 @@ public final class SoundUtil
         ccSound.get().addDefault("addItem", "BLOCK_GRAVEL_PLACE");
         ccSound.get().addDefault("click", "BLOCK_METAL_STEP");
         ccSound.get().addDefault("tradeview", "ENTITY_CHICKEN_EGG");
+        me.sat7.dynamicshop.files.DefaultsSync.Apply(ccSound, "Sound", null);
         ccSound.get().options().copyDefaults(true);
         ccSound.save();
     }

@@ -42,6 +42,7 @@ public class UIManager implements Listener
     public static void OnPlayerQuit(Player p)
     {
         currentUI.remove(p);
+        CommandItemEditor.OnPlayerQuit(p.getUniqueId());
     }
 
     public static void Open(Player player, Inventory inventory, InGameUI inGameUI)

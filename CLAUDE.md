@@ -63,6 +63,8 @@ Shop data lives in per-shop YAML files, not a database. `Options.currency` selec
 
 `LangUtil.setupLangFile()` contains both `ko-KR` and `en-US` string tables directly in Java. If you add a new UI string, add it to **both** language blocks and reference it through the existing translation helpers. `config.yml`'s `Language` key selects the language.
 
+Changing an existing default text is safe: `files/DefaultsSync` (called for both language files and `Layout.yml`) remembers the last default written for each key in `plugins/DynamicShop/.defaults/<file>.yml`. On start, a value that still equals the old default is replaced with the new default. A customised value is kept and logged once. Do not print "please edit your language file" banners. The snapshot only exists from 3.26 on. If an older default needs to change, pass its old text(s) in the `knownOldDefaults` map of that `DefaultsSync.Apply` call.
+
 ### Currencies / economy hooks
 
 Currency backends include Vault, XP, PlayerPoints, Jobs points, and `MultiCurrency:<id>`.
@@ -102,11 +104,25 @@ Use `utilities/SchedulerUtil.java` instead of the legacy Bukkit scheduler anywhe
 
 On Paper/Purpur these wrappers behave appropriately as well, so call sites should not add `isFolia()` branching. Do not use `Bukkit.getScheduler()` for new work.
 
+## User data safety (mandatory for every change)
+
+Every fix and every new feature must be safe for the data existing servers already have. That covers shop files, `config.yml`, language files, `Layout.yml`, `Startpage.yml`, `QuickSell.yml`, `Sign.yml`, `Sound.yml`, `Worth_V2.yml`, `User.yml`, rotation data, logs and the MultiCurrency journal. It applies to data written by any earlier version of this fork and by the original upstream DynamicShop (last release 3.120.2). Updating must stay "replace the jar, restart": no manual steps, no lost settings, no reset shops.
+
+- Never require deleting or regenerating `config.yml` or any other data file.
+- Never rename or remove an existing key, or change what an existing value means, without migration code. Use `ConfigUtil` with a `PluginConfigVersion` bump, or `ShopUtil.BackwardCompatibility()`. Old values must keep working or be converted automatically.
+- Add new settings with `addDefault(...)`, so they are added to existing files. When a built-in default text changes, rely on `DefaultsSync` (see "Localization"). Never print "please edit your file" banners.
+- Read and write YAML only through `CustomConfig` (atomic save, never overwrites a file it could not read).
+- Existing shops must behave the same after an update unless the change is the point of the release. A behaviour change for existing setups counts as data impact (see below).
+- Test with existing data, not only with fresh files. Test data from an older release, and for format-sensitive changes, upstream-format data (see HANDOFF.md, "Upstream → this fork migration test").
+
+**If a change is big enough to affect user data, stop and tell the maintainer before implementing it.** Examples: a manual step, a reset, a regenerated file, a key that cannot be migrated automatically, or a changed default behaviour for existing shops. Explain the impact and the alternatives, and let the maintainer decide. If it goes ahead, state it clearly in the release notes and the README.
+
 ## Conventions already in the codebase
 
 - PascalCase method names exist throughout the original codebase (`GetCurrency`, `RefreshUI`, `SetupVault`) — match the surrounding file instead of converting naming piecemeal.
 - Comments mix Korean and English — do not strip or "clean up" existing Korean comments.
 - `CustomConfig` + `addDefault(...)` + `copyDefaults(true)` + `.save()` is the standard YAML pattern. Follow it for new config keys.
+- `CustomConfig.save()` writes atomically. It refuses to overwrite a file that failed to parse at load time (a `.broken-<time>` copy is made). Never bypass this with a direct `YamlConfiguration.save(file)`. Code that lists a data folder must only load `*.yml` files.
 - Lombok `@Getter`/`@Setter` is used on model classes such as `DSItem`.
 
 ## Releasing
@@ -117,7 +133,7 @@ Tag pushes publish releases through `.github/workflows/ds.yml`. GitHub generates
 
 For a release:
 1. Bump `<version>` in `pom.xml` (feature → minor, fixes only → patch). `plugin.yml` picks it up via `${project.version}`.
-2. Update the "ahead of upstream" list in `README.md` if the change is something upstream doesn't have.
+2. Update the "ahead of upstream" list in `README.md` if the change is something upstream doesn't have. Confirm the release follows "User data safety"; any data-impacting change must be called out in the release notes.
 3. Commit and push the code/docs changes to `master`, then `git tag <version> && git push origin <version>` (tags in this repo have no `v` prefix).
 4. Watch the tag workflow and confirm the GitHub Release and jar asset exist.
 

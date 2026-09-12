@@ -1,6 +1,7 @@
 package me.sat7.dynamicshop.utilities;
 
 import me.sat7.dynamicshop.files.CustomConfig;
+import me.sat7.dynamicshop.files.DefaultsSync;
 
 public final class LayoutUtil
 {
@@ -30,6 +31,7 @@ public final class LayoutUtil
         ccLayout.get().addDefault("TRADE_VIEW.SELL", "§f{Price}{\\nStock}{\\nDeliveryCharge}\n{\\nTradeLore}");
         ccLayout.get().addDefault("TRADE_VIEW.BALANCE", "§f{PlayerBalance}{\\nShopBalance}");
 
+        DefaultsSync.Apply(ccLayout, "Layout", null);
         ccLayout.get().options().copyDefaults(true);
         ccLayout.save();
     }

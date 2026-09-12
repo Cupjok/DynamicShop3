@@ -39,6 +39,10 @@ public final class Sell
         CustomConfig data = ShopUtil.shopConfigFiles.get(shopName);
         String currencyType = ShopUtil.GetCurrency(data);
 
+        // 명령어 상품은 매입하지 않음
+        if (CommandItemUtil.IsCommandItem(data.get(), String.valueOf(tradeIdx)))
+            return 0;
+
         double priceSellOld = DynaShopAPI.getSellPrice(shopName, itemStack);
         double priceBuyOld = Calc.getCurrentPrice(shopName, String.valueOf(tradeIdx), true);
         int stockOld = data.get().getInt(tradeIdx + ".stock");
@@ -227,6 +231,13 @@ public final class Sell
     public static void sell(String currency, Player player, String shopName, String tradeIdx, ItemStack itemStack, double priceSum, boolean infiniteStock)
     {
         CustomConfig data = ShopUtil.shopConfigFiles.get(shopName);
+
+        // 명령어 상품은 매입하지 않음
+        if (CommandItemUtil.IsCommandItem(data.get(), tradeIdx))
+        {
+            player.sendMessage(DynamicShop.dsPrefix(player) + t(player, "CMD_ITEM.CANNOT_SELL"));
+            return;
+        }
 
         double priceSellOld = DynaShopAPI.getSellPrice(shopName, itemStack);
         double priceBuyOld = Calc.getCurrentPrice(shopName, String.valueOf(tradeIdx), true);

@@ -122,6 +122,14 @@ public final class DynaShopAPI
         UIManager.Open(player, inventory, uiClass);
     }
 
+    // 명령어 상품 편집기
+    public static void openCommandItemEditor(Player player, String shopName, int shopSlotIndex)
+    {
+        me.sat7.dynamicshop.guis.CommandItemEditor uiClass = new me.sat7.dynamicshop.guis.CommandItemEditor();
+        Inventory inventory = uiClass.getGui(player, shopName, shopSlotIndex);
+        UIManager.Open(player, inventory, uiClass);
+    }
+
     // 페이지 에디터 열기
     public static void openPageEditor(Player player, String shopName, int page)
     {

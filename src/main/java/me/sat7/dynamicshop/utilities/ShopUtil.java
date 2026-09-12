@@ -52,6 +52,10 @@ public final class ShopUtil
         {
             for (File f : listOfFiles)
             {
+                // 상점 파일만 (백업 *.yml.broken-*, 저장 중 임시파일 *.yml.tmp 등은 상점이 아님)
+                if (!f.isFile() || !f.getName().endsWith(".yml"))
+                    continue;
+
                 CustomConfig shopCC = new CustomConfig();
 
                 int idx = f.getName().lastIndexOf( "." );
@@ -938,6 +942,13 @@ public final class ShopUtil
                     if (DynamicShop.DEBUG_LOG_ENABLED)
                         failReason.add("shopName:" + entry.getKey() + "-buy only");
                     continue; // 구매만 가능함
+                }
+
+                if (CommandItemUtil.IsCommandItem(data.get(), String.valueOf(sameItemIdx)))
+                {
+                    if (DynamicShop.DEBUG_LOG_ENABLED)
+                        failReason.add("shopName:" + entry.getKey() + "-command item");
+                    continue; // 명령어 상품은 매입하지 않음
                 }
 
                 // 여러 재화로 취급중인 경우 지원 안함.

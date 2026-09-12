@@ -10,9 +10,12 @@ import org.bukkit.configuration.ConfigurationSection;
 import me.sat7.dynamicshop.DynamicShop;
 import me.sat7.dynamicshop.constants.Constants;
 import me.sat7.dynamicshop.files.CustomConfig;
+import me.sat7.dynamicshop.files.DefaultsSync;
 import org.bukkit.entity.Player;
 
 import java.text.DecimalFormat;
+import java.util.List;
+import java.util.Map;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -317,7 +320,7 @@ public final class LangUtil
 
             ccLang.get().addDefault("QUICK_SELL_TITLE", "§3빠른 판매");
             ccLang.get().addDefault("QUICK_SELL.GUIDE_TITLE", "§3§l빠른 판매 도움말");
-            ccLang.get().addDefault("QUICK_SELL.GUIDE_LORE", "§a판매할 아이템을 좌클릭 하세요.\n§a씨프트 좌클릭으로 같은 유형의 아이템을 모두 팝니다.\n§a우클릭으로 해당 아이템 상점으로 이동합니다.");
+            ccLang.get().addDefault("QUICK_SELL.GUIDE_LORE", "§a좌클릭으로 인벤토리에 있는 같은 유형의 아이템을 모두 팝니다.\n§a씨프트 좌클릭으로 클릭한 묶음만 팝니다.\n§a우클릭으로 해당 아이템 상점으로 이동합니다.");
 
             ccLang.get().addDefault("ARROW.UP", "§a⬆");
             ccLang.get().addDefault("ARROW.DOWN", "§c⬇");
@@ -490,10 +493,38 @@ public final class LangUtil
             ccLang.get().addDefault("CLOSE", "§f닫기");
             ccLang.get().addDefault("CLOSE_LORE", "§f§n클릭: 닫기");
 
+            ccLang.get().addDefault("ITEM_SETTING.ITEM_TYPE", "§f상품 유형");
+            ccLang.get().addDefault("ITEM_SETTING.ITEM_TYPE_LORE", "§f현재: §e{type}\n§e클릭: 일반 아이템 / 명령어 상품 전환\n§7명령어 상품은 아이템을 주지 않고 명령어만 실행합니다.");
+            ccLang.get().addDefault("ITEM_SETTING.TYPE_NORMAL", "일반 아이템");
+            ccLang.get().addDefault("ITEM_SETTING.TYPE_COMMAND", "명령어 상품");
+            ccLang.get().addDefault("ITEM_SETTING.COMMAND_EDITOR", "§f명령어 / 이름 / 설명 편집");
+            ccLang.get().addDefault("ITEM_SETTING.COMMAND_EDITOR_LORE", "§f명령어 {num}개\n§e클릭: 열기");
+            ccLang.get().addDefault("ITEM_SETTING.SAVE_FIRST", "§f먼저 '완료'를 눌러 아이템을 상점에 저장한 뒤 유형을 바꾸세요.");
+            ccLang.get().addDefault("CMD_ITEM.TITLE", "§3명령어 상품");
+            ccLang.get().addDefault("CMD_ITEM.RENAME", "§f이름 변경");
+            ccLang.get().addDefault("CMD_ITEM.RENAME_LORE", "§7{name}\n§e좌클릭: 새 이름 입력\n§e우클릭: 초기화");
+            ccLang.get().addDefault("CMD_ITEM.LORE", "§f설명 변경");
+            ccLang.get().addDefault("CMD_ITEM.LORE_LORE", "§e좌클릭: 새 설명 입력 (\\n = 줄바꿈)\n§e우클릭: 지우기");
+            ccLang.get().addDefault("CMD_ITEM.ADD_COMMAND", "§f명령어 추가");
+            ccLang.get().addDefault("CMD_ITEM.ADD_COMMAND_LORE", "§e클릭: 채팅으로 명령어 입력");
+            ccLang.get().addDefault("CMD_ITEM.HELP", "§f도움말");
+            ccLang.get().addDefault("CMD_ITEM.HELP_LORE", "§7구매 시 콘솔에서 명령어를 실행합니다.\n§7구매 수량 1개당 한 번씩 실행됩니다.\n§7표시된 아이템은 지급되지 않습니다.\n§7치환: {player} {uuid} {shop}\n§7색상: &a &l &#FF5555 <#FF5555> <gradient:#FF0000:#0000FF>");
+            ccLang.get().addDefault("CMD_ITEM.COMMAND", "§f명령어 #{num}");
+            ccLang.get().addDefault("CMD_ITEM.COMMAND_LORE", "§e좌클릭: 수정\n§e우클릭: 삭제");
+            ccLang.get().addDefault("CMD_ITEM.ENTER_NAME", "§f채팅에 새 이름을 입력하세요. (&a, &#FF5555, <#FF5555>, <gradient:...> 등 지원, 취소: cancel)");
+            ccLang.get().addDefault("CMD_ITEM.ENTER_LORE", "§f채팅에 새 설명을 입력하세요. \\n 으로 줄을 바꿉니다. (색상 코드 지원, 취소: cancel)");
+            ccLang.get().addDefault("CMD_ITEM.ENTER_COMMAND", "§f채팅에 명령어를 입력하세요. (/ 는 있어도 없어도 됨, 실행되지 않고 저장만 됩니다. 치환: {player} {uuid} {shop}, 취소: cancel)");
+            ccLang.get().addDefault("CMD_ITEM.LIST_FULL", "§f명령어는 최대 45개까지 추가할 수 있습니다.");
+            ccLang.get().addDefault("CMD_ITEM.NOT_READY", "§f아직 구매할 수 없는 상품입니다.");
+            ccLang.get().addDefault("CMD_ITEM.CANNOT_SELL", "§f이 상품은 판매할 수 없습니다.");
+
             ccLang.get().addDefault("EXP_POINTS", "Exp");
             ccLang.get().addDefault("JOB_POINTS", "Job Points");
             ccLang.get().addDefault("PLAYER_POINTS", "Player Points");
 
+            DefaultsSync.Apply(ccLang, "Lang_V3_ko-KR", Map.of("QUICK_SELL.GUIDE_LORE", List.of(
+                    "§a판매할 아이탬을 좌클릭 하세요.\n§a씨프트 좌클릭으로 같은 유형의 아이탬을 모두 팝니다.\n§a우클릭으로 해당 아이탬 상점으로 이동합니다.",
+                    "§a판매할 아이템을 좌클릭 하세요.\n§a씨프트 좌클릭으로 같은 유형의 아이템을 모두 팝니다.\n§a우클릭으로 해당 아이템 상점으로 이동합니다.")));
             ccLang.get().options().copyDefaults(true);
             ccLang.save();
         }
@@ -960,10 +991,37 @@ public final class LangUtil
             ccLang.get().addDefault("CLOSE", "§fClose");
             ccLang.get().addDefault("CLOSE_LORE", "§f§nClick: Close");
 
+            ccLang.get().addDefault("ITEM_SETTING.ITEM_TYPE", "§fItem type");
+            ccLang.get().addDefault("ITEM_SETTING.ITEM_TYPE_LORE", "§fCurrent: §e{type}\n§eClick: switch normal item / command item\n§7A command item runs commands instead of giving the item.");
+            ccLang.get().addDefault("ITEM_SETTING.TYPE_NORMAL", "Normal item");
+            ccLang.get().addDefault("ITEM_SETTING.TYPE_COMMAND", "Command item");
+            ccLang.get().addDefault("ITEM_SETTING.COMMAND_EDITOR", "§fEdit commands / name / lore");
+            ccLang.get().addDefault("ITEM_SETTING.COMMAND_EDITOR_LORE", "§f{num} command(s)\n§eClick: open");
+            ccLang.get().addDefault("ITEM_SETTING.SAVE_FIRST", "§fClick 'Done' to save the item to the shop first, then change its type.");
+            ccLang.get().addDefault("CMD_ITEM.TITLE", "§3Command item");
+            ccLang.get().addDefault("CMD_ITEM.RENAME", "§fRename");
+            ccLang.get().addDefault("CMD_ITEM.RENAME_LORE", "§7{name}\n§eLMB: enter a new name\n§eRMB: reset");
+            ccLang.get().addDefault("CMD_ITEM.LORE", "§fChange lore");
+            ccLang.get().addDefault("CMD_ITEM.LORE_LORE", "§eLMB: enter new lore (\\n = new line)\n§eRMB: clear");
+            ccLang.get().addDefault("CMD_ITEM.ADD_COMMAND", "§fAdd command");
+            ccLang.get().addDefault("CMD_ITEM.ADD_COMMAND_LORE", "§eClick: type a command in chat");
+            ccLang.get().addDefault("CMD_ITEM.HELP", "§fHelp");
+            ccLang.get().addDefault("CMD_ITEM.HELP_LORE", "§7Commands run from the console when bought,\n§7once per unit bought.\n§7The shown item is not given.\n§7Placeholders: {player} {uuid} {shop}\n§7Colours: &a &l &#FF5555 <#FF5555> <gradient:#FF0000:#0000FF>");
+            ccLang.get().addDefault("CMD_ITEM.COMMAND", "§fCommand #{num}");
+            ccLang.get().addDefault("CMD_ITEM.COMMAND_LORE", "§eLMB: edit\n§eRMB: delete");
+            ccLang.get().addDefault("CMD_ITEM.ENTER_NAME", "§fType the new name in chat. (&a, &#FF5555, <#FF5555>, <gradient:...> supported, 'cancel' to cancel)");
+            ccLang.get().addDefault("CMD_ITEM.ENTER_LORE", "§fType the new lore in chat. Use \\n for a new line. (colour codes supported, 'cancel' to cancel)");
+            ccLang.get().addDefault("CMD_ITEM.ENTER_COMMAND", "§fType the command in chat. (with or without /, it is saved, not run. Placeholders: {player} {uuid} {shop}, 'cancel' to cancel)");
+            ccLang.get().addDefault("CMD_ITEM.LIST_FULL", "§fA command item can have up to 45 commands.");
+            ccLang.get().addDefault("CMD_ITEM.NOT_READY", "§fThis item is not available yet.");
+            ccLang.get().addDefault("CMD_ITEM.CANNOT_SELL", "§fThis item cannot be sold.");
+
             ccLang.get().addDefault("EXP_POINTS", "Exp Points");
             ccLang.get().addDefault("JOB_POINTS", "Job Points");
             ccLang.get().addDefault("PLAYER_POINTS", "Player Points");
 
+            DefaultsSync.Apply(ccLang, "Lang_V3_en-US", Map.of("QUICK_SELL.GUIDE_LORE", List.of(
+                    "§aLeft-click the item you want to sell.\n§aShift left click to sell all items of the same type.\n§aRight-click to go to the item shop.")));
             ccLang.get().options().copyDefaults(true);
             ccLang.save();
         }

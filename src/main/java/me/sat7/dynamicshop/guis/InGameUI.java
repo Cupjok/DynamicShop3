@@ -32,7 +32,8 @@ public class InGameUI
         LogViewer,
         StockSimulator,
         RotationEditor,
-        CurrencySelector
+        CurrencySelector,
+        CommandItemEditor
     }
 
     public UI_TYPE uiType;

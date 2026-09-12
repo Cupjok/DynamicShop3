@@ -163,7 +163,12 @@ public final class Buy
             }
         }
 
-        int leftAmount = tradeAmount;
+        // 명령어 상품: 보여지는 아이템은 주지 않고 명령어만 실행
+        boolean commandItem = CommandItemUtil.IsCommandItem(data.get(), tradeIdx);
+        if (commandItem)
+            CommandItemUtil.RunCommands(data.get(), shopName, tradeIdx, player.getName(), player.getUniqueId(), tradeAmount);
+
+        int leftAmount = commandItem ? 0 : tradeAmount;
         int maxStackSize = itemStack.getType().getMaxStackSize();
         while (leftAmount > 0)
         {
@@ -197,7 +202,7 @@ public final class Buy
         LogUtil.addLog(shopName, itemStack.getType().toString(), tradeAmount, priceSum, currency, player.getName());
 
         // 메시지 출력
-        SendBuyMessage(currency, econ, player, tradeAmount, priceSum, itemStack);
+        SendBuyMessage(currency, econ, player, tradeAmount, priceSum, commandItem ? CommandItemUtil.WithDisplayName(itemStack, data.get(), tradeIdx) : itemStack);
 
         // 플레이어에게 소리 재생
         SoundUtil.playerSoundEffect(player, "buy");

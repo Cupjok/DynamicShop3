@@ -4,6 +4,7 @@ import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 
 import me.sat7.dynamicshop.DynaShopAPI;
+import me.sat7.dynamicshop.files.CustomConfig;
 import me.sat7.dynamicshop.utilities.*;
 import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
@@ -41,6 +42,8 @@ public final class ItemSettings extends InGameUI
     private final int TRADE_LIMIT_INTERVAL_TIMER = 48;
     private final int RECOMMEND = 49;
     private final int DISCOUNT = 50;
+    private final int ITEM_TYPE = 51;
+    private final int COMMAND_EDITOR = 52;
     private final int REMOVE = 53;
 
     private final int BUY_VALUE = 1;
@@ -288,6 +291,18 @@ public final class ItemSettings extends InGameUI
 
         CreateButton(RECOMMEND, Material.NETHER_STAR, t(player, "ITEM_SETTING.RECOMMEND"), recommendLore); // 추천 버튼
 
+        // 상품 유형 (일반 / 명령어)
+        FileConfiguration shopConfig = ShopUtil.shopConfigFiles.get(shopName).get();
+        String key = String.valueOf(shopSlotIndex);
+        boolean commandItem = IsSavedInShop() && CommandItemUtil.IsCommandItem(shopConfig, key);
+        CreateButton(ITEM_TYPE, commandItem ? Material.COMMAND_BLOCK : Material.CHEST, t(player, "ITEM_SETTING.ITEM_TYPE"),
+                     t(player, "ITEM_SETTING.ITEM_TYPE_LORE").replace("{type}", t(player, commandItem ? "ITEM_SETTING.TYPE_COMMAND" : "ITEM_SETTING.TYPE_NORMAL")));
+        if (commandItem)
+        {
+            CreateButton(COMMAND_EDITOR, Material.WRITABLE_BOOK, t(player, "ITEM_SETTING.COMMAND_EDITOR"),
+                         t(player, "ITEM_SETTING.COMMAND_EDITOR_LORE").replace("{num}", String.valueOf(CommandItemUtil.GetCommands(shopConfig, key).size())));
+        }
+
         CreateButton(DONE, Material.STRUCTURE_VOID, t(player, "ITEM_SETTING.DONE"), t(player, "ITEM_SETTING.DONE_LORE")); // 완료 버튼
         CreateButton(CLOSE, Material.BARRIER, t(player, "ITEM_SETTING.CLOSE"), t(player, "ITEM_SETTING.CLOSE_LORE")); // 닫기 버튼
         CreateButton(REMOVE, Material.BONE, t(player, "ITEM_SETTING.REMOVE"), t(player, "ITEM_SETTING.REMOVE_LORE")); // 삭제 버튼
@@ -312,6 +327,8 @@ public final class ItemSettings extends InGameUI
         else if (e.getSlot() == REMOVE) RemoveItem();
         else if (e.getSlot() == RECOMMEND) SetToRecommend();
         else if (e.getSlot() == DISCOUNT) OnDiscountButtonClick(e.isLeftClick());
+        else if (e.getSlot() == ITEM_TYPE) OnItemTypeButtonClick();
+        else if (e.getSlot() == COMMAND_EDITOR) OpenCommandEditor();
         else if (e.getSlot() == TRADE_LIMIT_SELL) OnSellLimitAmountButtonClick(e.isLeftClick(), e.isShiftClick());
         else if (e.getSlot() == TRADE_LIMIT_BUY) OnBuyLimitAmountButtonClick(e.isLeftClick(), e.isShiftClick());
         else if (e.getSlot() == TRADE_LIMIT_INTERVAL) OnTradeLimitIntervalButtonClick(e.isLeftClick(), e.isShiftClick());
@@ -384,6 +401,45 @@ public final class ItemSettings extends InGameUI
         player.sendMessage(DynamicShop.dsPrefix(player) + t(player, "MESSAGE.ITEM_DELETED"));
         DynaShopAPI.openShopGui(player, shopName, shopSlotIndex / 45 + 1);
         SoundUtil.playerSoundEffect(player, "deleteItem");
+    }
+
+    // 이 슬롯에 같은 아이템이 이미 저장되어 있는지 (새로 추가 중인 아이템은 아직 상점 데이터가 없음)
+    private boolean IsSavedInShop()
+    {
+        FileConfiguration config = ShopUtil.shopConfigFiles.get(shopName).get();
+        String key = String.valueOf(shopSlotIndex);
+        return config.contains(key + ".value")
+               && dsItem.getItemStack().getType().name().equals(config.getString(key + ".mat"));
+    }
+
+    private void OnItemTypeButtonClick()
+    {
+        if (!IsSavedInShop())
+        {
+            player.sendMessage(DynamicShop.dsPrefix(player) + t(player, "ITEM_SETTING.SAVE_FIRST"));
+            return;
+        }
+
+        CustomConfig data = ShopUtil.shopConfigFiles.get(shopName);
+        String key = String.valueOf(shopSlotIndex);
+        boolean toCommand = !CommandItemUtil.IsCommandItem(data.get(), key);
+        CommandItemUtil.SetCommandItem(data.get(), key, toCommand);
+        data.save();
+        RotationUtil.UpdateCurrentRotationData(shopName, shopSlotIndex);
+
+        if (toCommand)
+            OpenCommandEditor();
+        else
+            RefreshWindow();
+    }
+
+    private void OpenCommandEditor()
+    {
+        if (!IsSavedInShop() || !CommandItemUtil.IsCommandItem(ShopUtil.shopConfigFiles.get(shopName).get(), String.valueOf(shopSlotIndex)))
+            return;
+
+        CommandItemEditor.SetReturnTarget(player, shopName, shopSlotIndex, dsItem, currentTab, timerOffset);
+        DynaShopAPI.openCommandItemEditor(player, shopName, shopSlotIndex);
     }
 
     private void OnDiscountButtonClick(boolean isLeftClick)

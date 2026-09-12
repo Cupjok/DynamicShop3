@@ -607,7 +607,12 @@ public final class MultiCurrencyTrade
             return;
         }
 
-        GiveItems(player, o.item, o.itemAmount);
+        // Command items: the shown item is never given; the commands are the delivery (same GIVING/REVIEW rules).
+        CustomConfig shopData = ShopUtil.shopConfigFiles.get(o.shopName);
+        if (o.type == MultiCurrencyOrder.Type.BUY && shopData != null && CommandItemUtil.IsCommandItem(shopData.get(), o.tradeIdx))
+            CommandItemUtil.RunCommands(shopData.get(), o.shopName, o.tradeIdx, player.getName(), player.getUniqueId(), o.itemAmount);
+        else
+            GiveItems(player, o.item, o.itemAmount);
         player.saveData();
 
         orders.remove(o.journalId());

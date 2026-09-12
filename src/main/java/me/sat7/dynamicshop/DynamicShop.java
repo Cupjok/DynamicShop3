@@ -207,18 +207,6 @@ public final class DynamicShop extends JavaPlugin implements Listener
 
         RotationUtil.RestartAllRotationTask();
 
-        // Warning for QuickSell logic change (Left-Click/Shift-Click swap)
-        // Server admin needs to update the language file (QUICK_SELL.GUIDE_LORE) manually.
-        console.sendMessage("=======================================================");
-        console.sendMessage(Constants.DYNAMIC_SHOP_PREFIX + " QUICKSELL UI LOGIC HAS BEEN MODIFIED!");
-        console.sendMessage(Constants.DYNAMIC_SHOP_PREFIX + " Please update your language file (e.g., Lang_V3_en-US.yml):");
-        console.sendMessage(Constants.DYNAMIC_SHOP_PREFIX + " -> QUICK_SELL.GUIDE_LORE");
-        console.sendMessage(Constants.DYNAMIC_SHOP_PREFIX + "    - The logic for Left-Click and Shift+Left-Click has been swapped.");
-        console.sendMessage(Constants.DYNAMIC_SHOP_PREFIX + "    - Please set the LORE to reflect this: ");
-        console.sendMessage(Constants.DYNAMIC_SHOP_PREFIX + "    - Left-click: Sell ALL items of that type.");
-        console.sendMessage(Constants.DYNAMIC_SHOP_PREFIX + "    - Shift+Left-click: Sell only the selected STACK.");
-        console.sendMessage("=======================================================");
-
         // 완료
         console.sendMessage(Constants.DYNAMIC_SHOP_PREFIX + " Enabled! :)");
 

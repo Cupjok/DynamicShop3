@@ -404,6 +404,8 @@ public final class Shop extends InGameUI
                     meta.setLore(null);
                 else
                     meta.setLore(new ArrayList<>(Arrays.asList(lore.split("\n"))));
+                if (shopData.contains(s + ".value"))
+                    CommandItemUtil.ApplyDisplay(meta, shopData, s); // 명령어 상품의 이름/설명
                 itemStack.setItemMeta(meta);
                 inventory.setItem(idx, itemStack);
             } catch (Exception e)

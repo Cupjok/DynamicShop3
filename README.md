@@ -22,8 +22,11 @@
 - 🎨 **Modern text formatting** — Legacy colors, hex colors, gradients, and supported MiniMessage visual tags
 - 🔄 **Shop rotations** — Configurable stock and rotating shops
 - 📦 **Item metadata support** — Decorative items can optionally keep their names, lore, and tooltip information
+- ⌨️ **Command items** — A shop item can run console commands when bought instead of giving the shown item, with its own coloured name and lore
 - 🛡️ **Safe transactions** — Protection against incomplete and duplicate payments
 - 💾 **Persistent data** — Unfinished MultiCurrency orders survive restarts and can be recovered safely
+- 🔒 **Safe data files** — Files are saved atomically, and a YAML file with a typo is backed up and never overwritten
+- 🔁 **Upgrade-safe settings** — Updates add new options and refresh untouched default texts automatically, without resetting your own changes
 
 ## 🎮 Supported Platforms
 
@@ -72,6 +75,19 @@ Shop titles, the start page, buttons, names, and lore support modern formatting,
 
 Normal text such as `R&D Shop` and `Shop & More` remains unchanged.
 
+## ⌨️ Command Items
+
+In a shop, Shift + right-click an item to open its settings, then click **Item type** to turn it into a command item
+(the item has to be saved to the shop first). The command item editor opens:
+
+- **Add command** — type a command in chat, with or without `/` (it is saved, not run). Click a command to edit it, right-click to delete it.
+  Placeholders: `{player}`, `{uuid}`, `{shop}`.
+- **Rename** / **Change lore** — the name and lore shown in the shop. They support every colour format listed above.
+  In lore, `\n` starts a new line. Right-click resets them.
+
+When a player buys a command item, its commands run from the console once per unit bought, and the shown item is
+not given. Command items cannot be sold to the shop. Price, stock, discounts and trade limits work as for normal items.
+
 ## 🎮 Commands
 
 | Command | Alias | Description |
@@ -95,6 +111,24 @@ Normal text such as `R&D Shop` and `Shop & More` remains unchanged.
 3. Install the economy and optional integration plugins you want to use.
 4. Start or restart the server.
 5. Configure DynamicShop3 in `plugins/DynamicShop/`.
+
+## ⬆️ Updating & Upgrading from the Original DynamicShop
+
+Updating is always **replace the jar and restart**. You never need to delete `config.yml`, the language files or any shop file.
+
+- Your shops, settings, start page, custom texts and player data are kept.
+- New options are added to your files automatically.
+- Default texts you never changed are refreshed when a new version changes them. Texts you edited yourself are kept, and the console tells you when a newer default exists.
+- A data file with a YAML typo is not overwritten. A `.broken-<time>` copy is kept, the console says which file it is, and you can fix it and run `/ds reload`.
+
+**Coming from the original DynamicShop (sat7, up to 3.120.2)?** Drop this jar in place of the old one. It uses the same `plugins/DynamicShop/` folder. A full migration from upstream 3.120.1 data was tested: every shop, flag, price, discount, trade limit, shop account, custom item (name, lore, enchantments), start-page button, config value and custom text was kept, and buying worked the same as before. The original jars do not load on Minecraft 26.x, so switching is required there anyway.
+
+Things that behave differently from the original:
+
+- **Quick sell:** left-click sells **all** items of that type, Shift + left-click sells only the clicked stack. The guide text in the menu is updated automatically.
+- Everything in the ✨ Features list above applies to your existing shops right away.
+
+As with any plugin update, keep a backup of `plugins/DynamicShop/` before updating.
 
 ## 🤖 Using AI Agents to Develop DynamicShop3
 

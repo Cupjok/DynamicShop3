@@ -1230,6 +1230,7 @@ public final class WorthUtil
         ccWorth.get().addDefault("yellowwool", 7.64);
         ccWorth.get().addDefault("zombiehead", 5000.0);
 
+        me.sat7.dynamicshop.files.DefaultsSync.Apply(ccWorth, "Worth_V2", null);
         ccWorth.get().options().copyDefaults(true);
         ccWorth.save();
     }
