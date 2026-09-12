@@ -96,6 +96,77 @@ Normal text such as `R&D Shop` and `Shop & More` remains unchanged.
 4. Start or restart the server.
 5. Configure DynamicShop3 in `plugins/DynamicShop/`.
 
+## 🤖 Using AI Agents to Develop DynamicShop3
+
+This repository includes project-specific guidance for AI coding agents. You do **not** need to explain the entire architecture to an AI agent every time you want to make a change.
+
+Before modifying the project, an AI agent should read these files:
+
+1. **`CLAUDE.md`** — project architecture, important implementation rules, build/test commands, compatibility requirements, Folia scheduling rules, integrations, and development conventions.
+2. **`HANDOFF.md`** — the current development state, recent work, known issues, and anything that the previous AI session intentionally left for the next session.
+
+`CLAUDE.md` is named for Claude Code, but the information is **not exclusive to Claude**. Claude Code, Codex, Gemini CLI, Cursor agents, GitHub Copilot coding agents, and other AI coding tools can use the same files as repository guidance.
+
+### Recommended workflow
+
+Give your AI coding agent a short instruction like this:
+
+```text
+First, read CLAUDE.md and HANDOFF.md in this repository and follow their instructions.
+Then inspect the relevant existing code and tests before making changes.
+
+[Describe what you want to change here]
+
+Implement the change while preserving the existing architecture and compatibility rules.
+Run the appropriate build/tests after the change and report what was changed, what was tested, and any remaining concerns.
+```
+
+For example:
+
+```text
+First, read CLAUDE.md and HANDOFF.md.
+Then inspect the existing shop transaction code.
+
+I want to add [describe the feature or bug fix].
+Please implement it using the existing project conventions. Do not redesign unrelated parts of the plugin.
+Run the relevant tests and `mvn clean package` when appropriate, then summarize the result.
+```
+
+### For a bug fix
+
+```text
+Read CLAUDE.md and HANDOFF.md first.
+
+There is a bug where [describe the observed behavior].
+Please investigate the existing implementation, identify the root cause, fix it with the smallest appropriate change, and add or update a regression test if practical.
+
+Run the relevant tests and build, then report the root cause and verification results.
+```
+
+### For a new feature
+
+```text
+Read CLAUDE.md and HANDOFF.md first.
+
+I want to add this feature:
+[describe the feature and expected behavior]
+
+Inspect the existing architecture and implement this in the way that best fits the project. Reuse existing utilities and patterns where appropriate and avoid unrelated refactors.
+
+Update documentation or release notes if the change is user-visible. Run the relevant tests/build and summarize the implementation and verification.
+```
+
+### Important for AI agents
+
+- **Read the repository guidance before coding.** Do not start by blindly changing files.
+- **Inspect existing code before designing a new system.** DynamicShop3 already has established patterns for configuration, scheduling, transactions, localization, integrations, and GUI code.
+- **Do not remove or weaken safety rules** documented in `CLAUDE.md`, especially transaction handling and Folia scheduling requirements.
+- **Do not make unrelated refactors** unless they are necessary for the requested change.
+- **Run tests/builds after changes** and report failures instead of assuming the implementation is correct.
+- **Keep `HANDOFF.md` useful** when a task leaves important unfinished work, decisions, or follow-up information for the next AI session.
+
+This workflow also makes it possible to switch between different AI coding agents without having to rebuild the project's context from scratch.
+
 ## 📚 Documentation
 
 Detailed configuration, shop setup, commands, permissions, and integrations can be documented in the repository Wiki.
@@ -112,7 +183,7 @@ Requirements:
 - Maven
 - Paper API 26.2
 
-For contributors and developers, see `CLAUDE.md` for project architecture, development conventions, build information, and Folia scheduler conventions.
+For contributors and developers, read **`CLAUDE.md`** first for project architecture, development conventions, build information, Folia scheduler conventions, and other important implementation rules. Then read **`HANDOFF.md`** for the current development state.
 
 ## 🔗 Links
 
