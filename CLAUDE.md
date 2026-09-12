@@ -16,180 +16,118 @@ Guidance for Claude Code (or any future agent/session) working in this repo. Rea
 
 ```
 mvn clean package        # produces target/DynamicShop-<version>.jar (shaded)
-mvn compile               # quick compile check
-mvn test                  # unit tests (src/test/java) — JUnit 4
+mvn compile              # quick compile check
+mvn test                 # unit tests (src/test/java) — JUnit 4
 ```
 
 Requires network access on first build (Paper/JitPack/etc. repositories are not mirrored locally).
 
-**Requires a JDK 25+ toolchain to build** (`maven.compiler.release` is `25`, since Paper 26.2's `paper-api` jar itself is compiled to Java 25 class files — building with an older JDK fails with `bad class file ... wrong version`). If the default `java`/`JAVA_HOME` on your machine is older, point Maven at one explicitly, e.g. on this dev machine:
-```
-export JAVA_HOME="$(brew --prefix openjdk@25)"   # or any JDK 25/26+ install
-mvn clean package
-```
-Running the *built plugin* on a server is fine on any JDK that can run Java 25 bytecode (25 or newer) — this constraint is a **build-time** requirement, not a server requirement beyond what Paper 26.2 itself already needs to run.
+**Requires a JDK 25+ toolchain to build** (`maven.compiler.release` is `25`, since Paper 26.2's `paper-api` jar itself is compiled to Java 25 class files — building with an older JDK fails with `bad class file ... wrong version`). If the default `java`/`JAVA_HOME` on your machine is older, point Maven at one explicitly.
 
-If you ever see phantom "cannot find symbol" errors for Lombok-generated getters/setters (`getMaxStock`, `getMedian`, etc. on `DSItem`, or `getCurrentTax`/`setCurrentTax` on `ConfigUtil`) with a `mvn clean` build, check two things before assuming it's a real code issue:
-1. Maven running **offline** (`-o`) skips annotation processing entirely — always build online.
-2. The JDK in use doesn't support **implicit annotation processing** anymore (JDK 25+ disabled auto-discovering processors on the classpath with no explicit opt-in). This is why `maven-compiler-plugin` in `pom.xml` explicitly declares `<annotationProcessorPaths>` pointing at Lombok — don't remove that block, and if you bump the Lombok version, update it in both the `<dependencies>` block and this `<annotationProcessorPaths>` block (they're two separate coordinates Maven doesn't automatically keep in sync).
+Running the built plugin on a server requires a JDK capable of running Java 25 bytecode (25+), consistent with the Paper 26.2 runtime requirement.
 
-Also note: `maven-shade-plugin` needs to be recent enough to read Java 25 class files for its `minimizeJar` analysis (ASM version bundled inside the plugin) — we're pinned to `3.6.2`; don't downgrade it, older versions fail package with `Unsupported class file major version 69`.
+If Lombok-generated getters/setters appear missing after `mvn clean`, check that Maven is not running offline and that the compiler has explicit Lombok annotation processing enabled. Do not remove the Lombok `annotationProcessorPaths` block from `pom.xml`; keep its version synchronized with the Lombok dependency.
 
-CI: `.github/workflows/ds.yml` builds on push/PR to `master` and on tags (JDK 21, Temurin). A tag push (`v*` or any tag) also runs the `release` job, which builds the jar and publishes a GitHub Release with it attached via `softprops/action-gh-release`.
+`maven-shade-plugin` is pinned to `3.6.2` because older versions cannot reliably analyze Java 25 class files.
+
+CI: `.github/workflows/ds.yml` builds on push/PR to `master` and on tags. A tag push also builds the jar and publishes a GitHub Release with it attached.
 
 ## Runtime target
 
-- Minecraft/Paper API: tracks current Paper releases (`paper-api` version in `pom.xml`, e.g. `26.2.build.121-stable` for Paper 26.2). Bump this and `api-version` in `plugin.yml` together when targeting a new MC version — check `https://repo.papermc.io/repository/maven-public/io/papermc/paper/paper-api/maven-metadata.xml` for available builds.
-- Supported server software: **Paper, Purpur, and Folia** (`folia-supported: true` in `plugin.yml`). Purpur is a Paper fork so it's covered by Paper compatibility automatically. Folia requires everything scheduling-related to go through the region/entity/global/async schedulers — see "Folia scheduling rules" below, don't reintroduce `Bukkit.getScheduler()` / `BukkitRunnable` / `BukkitTask`.
-- Java 21 (`maven.compiler.source/target`).
+- Minecraft/Paper API: tracks current Paper releases (`paper-api` version in `pom.xml`, e.g. `26.2.build.121-stable`). Bump this and `api-version` in `plugin.yml` together when targeting a new MC version.
+- Supported server software: **Paper, Purpur, and Folia** (`folia-supported: true` in `plugin.yml`).
+- Folia requires scheduling through the region/entity/global/async schedulers — see "Folia scheduling rules" below. Do not reintroduce `Bukkit.getScheduler()` / `BukkitRunnable` / `BukkitTask`.
 
 ## Architecture map
 
 ```
 me.sat7.dynamicshop
-├── DynamicShop.java        plugin main class: onEnable/onDisable, hook setup (Vault/PAPI/Jobs/PlayerPoints/LocaleLib),
-│                           repeating tasks (backup, log save/cull, UI refresh tick), Economy accessor
+├── DynamicShop.java        plugin main class: onEnable/onDisable, hook setup and repeating tasks
 ├── DynaShopAPI.java        public-ish facade used by commands/GUIs to open shops, settings, etc.
 ├── UpdateChecker.java      SpigotMC version check (async)
-├── commands/               /ds (Root/DSCMD), /shop (Optional), /sell — subcommands under commands/shop/*
-│                           for per-shop admin actions (add item, currency, flags, rotation, tax, ...)
-├── constants/Constants.java  permission nodes + currency-type string constants (Vault/Exp/PlayerPoint/JobPoint)
-├── economyhook/            Jobs (points) and PlayerPoints integrations — thin wrappers guarded by an
-│                           `xxxActive` boolean flipped in DynamicShop's hookIntoX() methods
-├── events/                 Bukkit listeners: chat input capture (OnChat), sign shop clicks, inventory clicks,
-│                           join/quit cleanup, buy/sell event firing
-├── files/CustomConfig.java YAML config file wrapper (load/get/save/addDefault pattern used everywhere)
-├── guis/                   All inventory-based UI screens (Shop, ItemTrade, ShopSettings, ItemSettings,
-│                           RotationEditor, PageEditor, StockSimulator, LogViewer, StartPage, ...).
-│                           UIManager tracks "which UI is this player currently looking at" and drives the
-│                           per-second UI refresh tick.
-├── models/DSItem.java      Lombok @Getter/@Setter POJO for one shop item's pricing/stock state
-├── transactions/           Buy.java / Sell.java / Calc.java — the actual price math + currency debit/credit
-└── utilities/              ShopUtil (huge — shop data CRUD, currency dispatch, YAML shop files),
-                            ConfigUtil (config.yml accessors), WorthUtil (worth.yml / recommended values),
-                            RotationUtil (scheduled shop rotations), LangUtil (all UI strings, ko-KR + en-US
-                            built in, see below), SchedulerUtil (Folia-safe scheduler wrappers — use these,
-                            not Bukkit.getScheduler()), TabCompleteUtil, UserUtil, HashUtil, MathUtil, etc.
+├── commands/               /ds, /shop and /sell commands and per-shop admin actions
+├── constants/Constants.java  permission nodes + currency-type constants
+├── economyhook/            Jobs and PlayerPoints integrations
+├── events/                 Bukkit listeners for chat, signs, inventory, join/quit and trade events
+├── files/CustomConfig.java YAML config file wrapper
+├── guis/                   inventory-based UI screens and UIManager
+├── models/DSItem.java      Lombok model for one shop item's pricing/stock state
+├── transactions/           Buy.java / Sell.java / Calc.java — price math + currency debit/credit
+└── utilities/              ShopUtil, ConfigUtil, WorthUtil, RotationUtil, LangUtil, SchedulerUtil,
+                            TabCompleteUtil, UserUtil, HashUtil, MathUtil, ShopNameFormatter, etc.
 ```
 
-Shop data lives in per-shop YAML files (via `CustomConfig`), not a database. `Options.currency` on a shop's config selects one of `vault` / `exp` / `pp` / `jp` (see `Constants.S_*` and `ShopUtil.GetCurrency`).
+Shop data lives in per-shop YAML files, not a database. `Options.currency` selects the shop currency.
 
 ### Localization
 
-`LangUtil.setupLangFile()` hardcodes both `ko-KR` and `en-US` string tables directly in Java (not resource files) via `ccLang.get().addDefault(key, value)`. If you add a new UI string, add it to **both** language blocks in that one method, plus reference it with `t(player, "KEY")` / `n(number)` helpers. `config.yml`'s `Language` key picks which one loads.
+`LangUtil.setupLangFile()` contains both `ko-KR` and `en-US` string tables directly in Java. If you add a new UI string, add it to **both** language blocks and reference it through the existing translation helpers. `config.yml`'s `Language` key selects the language.
 
 ### Currencies / economy hooks
 
-Five currency backends, dispatched by `Options.currency` per shop:
-- `vault` — Vault `Economy` service (see below for the fork-compatibility nuance)
-- `exp` — player XP points, no external plugin needed
-- `pp` — PlayerPoints plugin (`economyhook/PlayerpointHook.java`, guarded by `PlayerpointHook.isPPActive`)
-- `jp` — Jobs (Jobs Reborn) points (`economyhook/JobsHook.java`, guarded by `JobsHook.jobsRebornActive`)
-- `MultiCurrency:<id>` — one currency of the MultiCurrency plugin (see "MultiCurrency integration" below)
+Currency backends include Vault, XP, PlayerPoints, Jobs points, and `MultiCurrency:<id>`.
 
-Everywhere a shop's currency is branched on, the final `else` means Vault. A MultiCurrency shop must never
-reach that `else`: `ShopUtil.GetCurrency()` returns `MultiCurrency:<id>` (never Vault) for it, and every
-branch site has an explicit `ShopUtil.IsMultiCurrency(...)` case. Add one when you add a new branch site.
+Everywhere a shop's currency is branched on, the final `else` means Vault. A MultiCurrency shop must never reach that `else`: `ShopUtil.GetCurrency()` returns `MultiCurrency:<id>` for it, and every branch site needs an explicit MultiCurrency case.
 
 ### MultiCurrency integration
 
-Optional (`softdepend: MultiCurrency`). DynamicShop talks to MultiCurrency **only** through the released public
-API `me.cupjok.multicurrency:multicurrency-api` (vendored as `lib/.../multicurrency-api-1.0.0.jar`, `provided`
-scope, taken unmodified from the MultiCurrency v1.0.0 GitHub release). Never touch its database, its
-implementation classes or its config, and never change the MultiCurrency project from here.
+Optional (`softdepend: MultiCurrency`). DynamicShop talks to MultiCurrency only through the released public API `me.cupjok.multicurrency:multicurrency-api`. Never touch its database, implementation classes or config, and never change the MultiCurrency project from here.
 
-- `economyhook/MultiCurrencyHook` — no API types; safe to load without MultiCurrency. Guard flag
-  `multiCurrencyActive`, currency lookup, `BigDecimal` conversion (`ToAmount`: CEILING for charges, FLOOR for
-  payouts, never more decimals than the currency's scale — MultiCurrency rejects excess precision), display-only
-  balance cache.
-- `economyhook/MultiCurrencyBridge` — the only class importing the API. Only reached after the guard.
-- `guis/CurrencySelector` — shop settings slot 31: lists every currency (built-ins + all MultiCurrency currencies)
-  and writes the canonical `Options.currency` value. Always write `Vault`/`Exp`/`JobPoint`/`PlayerPoint`/
-  `MultiCurrency:<id>` — `GetCurrency()` reads anything else (e.g. `jp`, `pp`) as Vault.
-- `transactions/MultiCurrencyTrade` — buy/sell/payout flow + journal; `MultiCurrencyOrder` — one order;
-  `MultiCurrencyOutcome` — classifies a `TransactionResult`.
+- `economyhook/MultiCurrencyHook` — safe to load without MultiCurrency; currency lookup, `BigDecimal` conversion and display-only balance cache.
+- `economyhook/MultiCurrencyBridge` — the only class importing the API.
+- `guis/CurrencySelector` — lists built-in and MultiCurrency currencies and writes canonical `Options.currency` values.
+- `transactions/MultiCurrencyTrade` — buy/sell/payout flow + journal; `MultiCurrencyOrder` — one order; `MultiCurrencyOutcome` — classifies a `TransactionResult`.
 
 Transaction rules (do not weaken):
-1. **No balance check before charging.** `Buy` for MultiCurrency shops runs the quantity/stock/limit loop without
-   the balance condition and calls `withdraw` once; `INSUFFICIENT_FUNDS` is the rejection. Never add a
-   `has()`/`balance()` pre-check (check-then-act). `balance()` is used for GUI display only.
-2. **Write-ahead journal.** Every order gets a UUID when the player clicks and is written to
-   `plugins/DynamicShop/MultiCurrencyOrders.yml` (temp file + fsync + atomic rename) *before* the first API call.
-   Idempotency key = `dynamicshop3:<buy|sell|refund|payout>:<uuid>`. Retries — quick retries, the 60 s resolver
-   and restarts — always resend the same key. Refunds use their own key (`refund`) derived from the order's UUID.
-3. **OUTCOME_UNKNOWN is never a failure.** `MultiCurrencyOutcome.Classify`: success/`DUPLICATE_TRANSACTION` =
-   applied; `OUTCOME_UNKNOWN`/exception = unknown (retry same key); on a first attempt any other reason = not
-   applied; after a possible earlier commit only `INSUFFICIENT_FUNDS`/`BALANCE_LIMIT_EXCEEDED` (checked inside
-   MultiCurrency's DB transaction after its key lookup) settle it, confirmed by looking the key up in `history()`.
-4. **Items only after a definitive APPLIED.** States: `PENDING` → `OWE_ITEMS` (buy paid / sell not paid) →
-   `GIVING` (written before items are handed out) → removed. A `GIVING` entry found at startup becomes `REVIEW`
-   (logged SEVERE, never re-given automatically). Owed items are delivered on join if the player was offline.
-5. **Sells take the items first** and call `player.saveData()` before depositing, so a crash can never leave the
-   player with both. A refused deposit gives the items back.
-6. Futures complete on a MultiCurrency DB thread: hop back with `SchedulerUtil.runGlobal`/`runForEntity` before
-   touching Bukkit or the journal. MultiCurrency does not support Folia, so this path is Paper/Purpur only.
+1. **No balance check before charging.** Use the transaction API's result for insufficient funds; never add a check-then-act `has()`/`balance()` pre-check. `balance()` is for GUI display only.
+2. **Write-ahead journal.** Every order is journaled before the first API call. Retries and restarts must reuse the same idempotency key.
+3. **OUTCOME_UNKNOWN is never a failure.** Unknown outcomes must be retried or resolved using the existing idempotency/history mechanism.
+4. **Items only after a definitive APPLIED.** Preserve the existing order state machine and never automatically re-give items after an ambiguous crash state.
+5. **Sells take the items first** and save player data before depositing, so a crash cannot leave the player with both. A refused deposit gives the items back.
+6. Futures completing on a MultiCurrency DB thread must hop back through `SchedulerUtil` before touching Bukkit or the journal. MultiCurrency does not support Folia, so this path is Paper/Purpur only.
 
 ### Shop-name formatting
 
-Shop titles (`Options.title`), the start page title, start-page button names and button lore (Change Lore) go through
-`utilities/ShopNameFormatter` → Adventure `Component` (Paper's `Bukkit.createInventory(holder, size, Component)`
-and `ItemMeta.displayName(Component)`). Accepted: `&`/`§` legacy codes, `&#RRGGBB`, `&x&R&R&G&G&B&B`, bare
-`#RRGGBB` (only when `UI.UseHexColorCode` is on, same rule as `LangUtil`), and MiniMessage **visual** tags only
-(colour, decorations, gradient, rainbow, transition, reset). Click/hover/insert/font/keybind/translatable/
-selector/score/nbt/newline tags are not registered (they stay literal text) and `sanitize()` strips any
-interactive style anyway. Malformed input falls back to plain text and never throws. An `&` between a letter/digit of
-normal text and an upper-case letter is text, not a code (`R&D Shop`); keep regression tests for this. Don't widen the tag
-resolver; don't use this formatter for internal shop *file* names (they are lookup keys).
+Shop titles, start-page titles, button names and relevant lore use `utilities/ShopNameFormatter` and Adventure Components. Preserve its current safe visual-only tag policy and regression coverage. Do not widen the resolver to interactive MiniMessage tags, and do not use the formatter for internal shop file names.
 
-**Vault compatibility:** don't gate on `getPluginManager().getPlugin("Vault") != null` — several popular drop-in replacements (VaultUnlocked, CMIVault) register the standard `net.milkbowl.vault.economy.Economy` service via Bukkit's `ServicesManager` without necessarily existing under the exact plugin name "Vault". The only correct check is whether `getServicesManager().getRegistration(Economy.class)` resolves (see `DynamicShop.SetupRSP()`, which retries a few times on enable to allow for load-order races). `Vault` is a **softdepend**, not a hard `depend`, for the same reason.
+**Vault compatibility:** do not gate on `getPluginManager().getPlugin("Vault") != null`. Check whether the standard `net.milkbowl.vault.economy.Economy` service resolves through Bukkit's `ServicesManager`, because drop-in Vault replacements may register the service without using the plugin name `Vault`.
 
 ### Folia scheduling rules
 
 Use `utilities/SchedulerUtil.java` instead of the legacy Bukkit scheduler anywhere in this codebase:
-- Global, not location/entity-specific (economy setup polling, file I/O, backups, log writes) → `runGlobal*` (wraps `Bukkit.getGlobalRegionScheduler()`).
-- Off-main-thread work with no world/entity access mid-task → `runAsync*` (wraps `Bukkit.getAsyncScheduler()`).
-- Anything touching a specific block/shop location (rotations tied to a physical shop) → `runAtLocation*` (wraps `Bukkit.getRegionScheduler()`).
-- Anything touching a specific player's inventory/GUI/chat state → `runForEntity` (wraps `player.getScheduler()`).
+- Global, not location/entity-specific → `runGlobal*`.
+- Off-main-thread work with no world/entity access → `runAsync*`.
+- A specific block/shop location → `runAtLocation*`.
+- A specific player's inventory/GUI/chat state → `runForEntity`.
 
-On Paper/Purpur (non-Folia) these all behave like the old main-thread/async scheduler, so this is safe everywhere, not just under Folia — there's no need for `isFolia()` branching in call sites. If you add a new repeating task or delayed callback, pick the right bucket above rather than reaching for `Bukkit.getScheduler()`.
+On Paper/Purpur these wrappers behave appropriately as well, so call sites should not add `isFolia()` branching. Do not use `Bukkit.getScheduler()` for new work.
 
-## Conventions already in the codebase (follow them, don't fight them)
+## Conventions already in the codebase
 
-- PascalCase method names are the existing house style in large swaths of this codebase (`GetCurrency`, `RefreshUI`, `SetupVault`) even though it's not idiomatic Java — match the surrounding file rather than converting to camelCase piecemeal.
-- Comments mix Korean and English (the original codebase is Korean-authored) — don't strip or "clean up" existing Korean comments, and it's fine to write new comments in English.
-- `CustomConfig` + `addDefault(...)` + `copyDefaults(true)` + `.save()` is the standard pattern for anything YAML-backed (config, lang, shop data, worth data). Follow it for new config keys instead of hand-rolling file I/O.
-- Lombok `@Getter`/`@Setter` on model classes (`DSItem`) — if `mvn compile` can't find a getter that's clearly annotated, it's the offline/annotation-processor issue above, not a missing method.
+- PascalCase method names exist throughout the original codebase (`GetCurrency`, `RefreshUI`, `SetupVault`) — match the surrounding file instead of converting naming piecemeal.
+- Comments mix Korean and English — do not strip or "clean up" existing Korean comments.
+- `CustomConfig` + `addDefault(...)` + `copyDefaults(true)` + `.save()` is the standard YAML pattern. Follow it for new config keys.
+- Lombok `@Getter`/`@Setter` is used on model classes such as `DSItem`.
 
 ## Releasing
 
-Tag pushes are what publish a release: `.github/workflows/ds.yml`'s `release` job builds the jar and creates the GitHub Release with it attached.
+Tag pushes publish releases through `.github/workflows/ds.yml`. GitHub generates the release notes automatically from the tag's commit history.
 
-**Every release must ship a written summary of what changed — never just a bare "Full Changelog" link.** The release notes are what server owners read to decide whether to update, so they have to explain the actual changes in their terms, not in terms of commits or file names.
+**Do not require, create, commit, or modify a tracked `RELEASE_NOTES.md`.** `RELEASE_NOTES.md` is intentionally a **local-only working file** for release preparation and must not be committed to this repository. If you use it locally to draft or review release notes, leave it untracked/ignored.
 
-`RELEASE_NOTES.md` at the repo root is the body for the *next* release. Rewrite it as part of the change, before tagging; CI publishes it verbatim and appends the auto-generated commit changelog beneath it. What it should contain:
-
-- A short section per user-visible change, with a heading a non-developer can parse ("Decoration items can now show their own name and lore", not "refactor deco render path").
-- For a new feature: how to actually use it in-game (which click, which command, which GUI), and where the setting lives if it adds one.
-- Whether existing servers/configs are affected, and explicitly say so when they are not ("every existing shop keeps its current appearance, nothing to migrate").
-- Bug fixes phrased as the symptom the user would have seen, not the code that was wrong.
-- A compatibility line (supported server software / MC version, config changes needed or not).
-- Anything that was *not* verified — in particular, in-game behavior, since this environment has no Minecraft client.
-
-Full release sequence:
+For a release:
 1. Bump `<version>` in `pom.xml` (feature → minor, fixes only → patch). `plugin.yml` picks it up via `${project.version}`.
-2. Rewrite `RELEASE_NOTES.md` for that version.
-3. Update the "ahead of upstream" list in `README.md` if the change is something upstream doesn't have.
-4. Commit and push to `master`, then `git tag <version> && git push origin <version>` (tags in this repo have no `v` prefix).
-5. Watch the tag's workflow run (`gh run watch`) and confirm the release and its jar asset exist (`gh release view <version>`).
+2. Update the "ahead of upstream" list in `README.md` if the change is something upstream doesn't have.
+3. Commit and push the code/docs changes to `master`, then `git tag <version> && git push origin <version>` (tags in this repo have no `v` prefix).
+4. Watch the tag workflow and confirm the GitHub Release and jar asset exist.
 
-If a release ever gets published with weak notes, fix it in place with `gh release edit <version> --notes-file <file>` rather than leaving it.
+If a release needs a polished human-written summary, it may be drafted in the local-only `RELEASE_NOTES.md` or supplied directly when editing the GitHub Release, but **never add `RELEASE_NOTES.md` to a commit**.
 
 ## Test servers (local dev machine only, not part of this repo)
 
-On the machine this was originally developed on, real Paper/Purpur/Folia server installs live in a sibling directory outside the repo (not checked in — this won't exist on a fresh clone or a different machine/fork). If you have similar local test servers, each typically has its own `plugins/` folder — drop the built jar in, start with the server's own `run.sh`/`cmd.sh`/`start-bg.sh` (scripts vary per server), and check `logs/latest.log` (or the equivalent console log) for enable/disable errors. Testing against a realistic plugin set (LuckPerms, WorldGuard, CMI, PlaceholderAPI, an actual Vault-compatible economy provider, etc.) is a much better signal than a bare-bones test instance — in particular, Vault-hook and Folia-scheduler changes should be verified against a real Jobs/economy plugin and a real Folia (or Folia-fork, e.g. Canvas) server before assuming they work.
+If similar local test servers exist, each typically has its own `plugins/` folder. Drop the built jar in, start the server using its own startup script, and check the latest console log for enable/disable errors. Testing against a realistic plugin set is a better signal than a bare-bones instance, especially for Vault-hook and Folia-scheduler changes.
 
 ## Where to look for more detail
 
 - `HANDOFF.md` — living session-continuity notes: what's currently mid-flight, what was verified, what's next. Update it before ending a session that leaves work unfinished; trim/archive it once a body of work fully lands and is verified.
-- `README.md` — user-facing feature list and the "ahead of upstream" changelog-ish section.
-- `RELEASE_NOTES.md` — the hand-written body for the next GitHub Release. Rewrite it before tagging (see "Releasing").
+- `README.md` — user-facing feature list and the "ahead of upstream" section.
