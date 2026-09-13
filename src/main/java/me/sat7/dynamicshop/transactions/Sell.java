@@ -113,6 +113,16 @@ public final class Sell
                     () -> RemoveQuickSellItems(player, itemStack, amount, isShiftClick, slot), priceBuyOld, priceSellOld, stockOld);
         }
 
+        // 지급액이 0 으로 떨어지면 아이템만 사라지므로 매입 거절
+        if (IsPayoutTooLow(currencyType, priceSum))
+        {
+            if (player != null)
+                player.sendMessage(DynamicShop.dsPrefix(player) + t(player, "MESSAGE.MC_PRICE_TOO_LOW"));
+
+            DynamicShop.PrintConsoleDbgLog("QSellFail-Payout too low. player:" + player + " itemType:" + itemStack.getType() + " shopName:" + shopName + " tradeIdx:" + tradeIdx + " priceSum:" + priceSum);
+            return 0;
+        }
+
         // 계산된 비용에 대한 처리 시도
         Economy econ = DynamicShop.getEconomy();
         if (!CheckTransactionSuccess(currencyType, player, priceSum))
@@ -178,6 +188,17 @@ public final class Sell
         }
 
         return priceSum;
+    }
+
+    // A payout that rounds down to nothing would take the player's items for free (e.g. a sell price of 0, which
+    // valueMin turns into 0.0001, or a delivery charge that eats the price). Exp and PlayerPoints are paid in whole
+    // numbers, the other built-in currencies in 0.01 steps. MultiCurrency checks its own scale in SubmitSell.
+    static boolean IsPayoutTooLow(String currencyType, double priceSum)
+    {
+        if (currencyType.equalsIgnoreCase(Constants.S_EXP) || currencyType.equalsIgnoreCase(Constants.S_PLAYERPOINT))
+            return (int) priceSum < 1;
+
+        return priceSum < 0.01;
     }
 
     // Removes the sold items from the player's inventory (quick sell / shift-click rules). Shared by the

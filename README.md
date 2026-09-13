@@ -130,6 +130,7 @@ Updating is always **replace the jar and restart**. You never need to delete `co
 Things that behave differently from the original:
 
 - **Quick sell:** left-click sells **all** items of that type, Shift + left-click sells only the clicked stack. The guide text in the menu is updated automatically.
+- **`/sell all`, `/sell hand` and quick sell never take items for nothing.** The original removed items whose sell payout rounded to 0 (for example a sell price set to 0, or a delivery charge larger than the price) and paid 0. These items are now refused and stay in the inventory.
 - Everything in the ✨ Features list above applies to your existing shops right away.
 
 As with any plugin update, keep a backup of `plugins/DynamicShop/` before updating.

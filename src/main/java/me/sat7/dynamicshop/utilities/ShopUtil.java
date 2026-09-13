@@ -1011,6 +1011,14 @@ public final class ShopUtil
 
                 value -= deliveryCosts;
 
+                // 배송비를 빼면 남는 돈이 없음
+                if (value <= 0)
+                {
+                    if (DynamicShop.DEBUG_LOG_ENABLED)
+                        failReason.add("shopName:" + entry.getKey() + "-no payout after delivery charge");
+                    continue;
+                }
+
                 if (topShopName.isEmpty() || bestPrice < value)
                 {
                     topShopName = entry.getKey();

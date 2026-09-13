@@ -2,6 +2,18 @@
 
 Living session-continuity notes. Read `CLAUDE.md` first for the durable architecture reference — this file is the "what's actually going on right now" doc. Update it whenever you leave work mid-flight; trim it once things fully land and are verified (don't let it grow forever as a changelog — that's what git history / README are for).
 
+## Session 2026-09-13 (later): `/sell all` took items for 0 (not committed; user tested in-game: works)
+
+- Report: `/sell all` removed items and paid 0. Cause found in code: a sell price of 0 is clamped to `valueMin`
+  (0.0001), so the item still counts as "bought by the shop"; Vault `depositPlayer(0.0064)` succeeds and the items are
+  removed. Same with a delivery charge that eats the price, or Exp/PlayerPoints payouts below 1 (cast to int).
+- Fix: `Sell.IsPayoutTooLow` (Exp/PP need >= 1, other built-in currencies >= 0.01) refuses the quick sell before any
+  money or items move (`MESSAGE.MC_PRICE_TOO_LOW`). `ShopUtil.FindTheBestShopToSell` skips a shop whose unit price
+  minus delivery is <= 0, so another shop can be picked. MultiCurrency already had its own scale check.
+- New `SellPayoutTest` (3). `mvn clean verify` green.
+- Not confirmed on the reporter's server. Note: ProfitMultiplier on the test server also declares `/sell`; if it owns
+  the label there, `/sell all` goes to ProfitMultiplier, not DynamicShop (`/dynamicshop:sell all` always reaches DS).
+
 ## Session 2026-09-13: command items (not committed, not released, not yet tested in-game)
 
 - Item settings (shop → Shift + right-click an item) → new **slot 51 "Item type"** (normal ↔ command; only for an item
@@ -76,6 +88,15 @@ Living session-continuity notes. Read `CLAUDE.md` first for the durable architec
   - Not tested: DynamicShop 2.x `Shop.yml` / config V2 (the conversion code is unchanged from upstream), the
     Premium version (closed source), Jobs/PlayerPoints shops (plugins not installed), rotation data.
 - Rule added to CLAUDE.md: "User data safety (mandatory for every change)".
+- **TODO (maintainer decided to postpone): support Minecraft 1.21.10 – 26.2.**
+  - Findings (2026-09-13): 3.121.0 does not load on Paper 26.1.2, 1.21.11 or 1.21.10 (`Unsupported API version
+    26.2`). The only blocker is `api-version: '26.2'` in `plugin.yml`. A copy of the jar with `api-version: '1.21.10'`
+    enabled on all three (servers on Java 26) and ran `createshop`/`add` from the console with no errors.
+  - PaperMC metadata: 1.21.10/1.21.11 need Java 21+; 26.1.x/26.2 need Java 25+. The jar is Java 25 bytecode, so a
+    1.21.x server must run Java 25 to load it (on Java 21 it fails with "Unsupported class file major version 69").
+  - Plan: set `api-version: '1.21.10'` and state "1.21.10 – 26.2, Java 25 required" in the README. Before release,
+    run a full bot test on each version: GUI, buy/sell, command items, quick sell, the start page, MultiCurrency if
+    possible, and Folia 26.1.x. Also check for 26.2-only API calls. This does not affect user data.
 - Released as **3.121.0**. The version jumps from 3.25.0 so that it is above upstream 3.120.2. Next versions continue
   from 3.121.x.
 
