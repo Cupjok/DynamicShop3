@@ -15,6 +15,8 @@
 
 ## ✨ Features
 
+- 🖱️ **Add items straight from your inventory** — Click an empty shop slot, then click any item in your own inventory, and it is in the shop. No commands, no config files. Left-click to set its prices, right-click to place it as a decoration
+- 🧬 **Full item data (NBT) support** — The whole item is stored and matched exactly: custom names, lore, enchantments, custom model data, plugin data (for example MMOItems or ItemsAdder items) and every other component. Players buy exactly the item you put in, and only that exact item can be sold back
 - 📈 **Dynamic pricing** — Prices change based on shop activity and configured rules
 - 🛒 **GUI-based shops** — Create and customize shops for your server
 - 💰 **Multiple currencies** — Vault-compatible economies, PlayerPoints, Jobs Reborn points, and optional MultiCurrency
