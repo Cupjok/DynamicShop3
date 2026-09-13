@@ -1,8 +1,8 @@
 # 🛒 DynamicShop3 Fork
 
 <p align="center">
-  <img src="https://img.shields.io/badge/Minecraft-26.2-green">
-  <img src="https://img.shields.io/badge/Java-25%2B-orange">
+  <img src="https://img.shields.io/badge/Minecraft-1.21%20%E2%80%93%2026.2-green">
+  <img src="https://img.shields.io/badge/Java-21%2B-orange">
   <img src="https://img.shields.io/github/v/release/Cupjok/DynamicShop3">
   <img src="https://img.shields.io/badge/Fork%20by-Claude%20Code-orange">
 </p>
@@ -19,6 +19,7 @@
 - 🛒 **GUI-based shops** — Create and customize shops for your server
 - 💰 **Multiple currencies** — Vault-compatible economies, PlayerPoints, Jobs Reborn points, and optional MultiCurrency
 - 🌐 **Folia support** — Designed for Paper, Purpur, and Folia
+- 🧩 **One jar for Minecraft 1.21 – 26.2** — The same release runs on every 1.21.x and 26.x server, tested on real servers for each version
 - 🎨 **Modern text formatting** — Legacy colors, hex colors, gradients, and supported MiniMessage visual tags
 - 🔄 **Shop rotations** — Configurable stock and rotating shops
 - 📦 **Item metadata support** — Decorative items can optionally keep their names, lore, and tooltip information
@@ -38,18 +39,16 @@
 
 ### Minecraft Versions
 
-**26.2** (Paper, Purpur and Folia)
+**1.21 – 26.2** (Paper, Purpur and Folia). One jar for all of them.
 
-The current releases (3.22.0 and newer) only load on Minecraft 26.2. On older servers the plugin does not load: it is compiled for Java 25 and declares `api-version: 26.2`.
+The plugin is built against the Minecraft 1.21 API for Java 21. Each release is started on real 1.21.x and 26.x servers to check that it loads, hooks the economy, creates a shop and reloads without errors.
 
-Still on an older Minecraft version? [Release 3.21.7](https://github.com/Cupjok/DynamicShop3/releases/tag/3.21.7) is the last release built for Minecraft 1.21.x (Paper 1.21.8 API, Java 21). It does not include the newer features and fixes listed in this README, and it is no longer updated.
+Releases 3.22.0 – 3.121.1 only loaded on 26.2. Updating from one of them to this version needs no changes.
 
 ### Java
 
-- **Running the server:** Java 25+
-- **Building from source:** Java 25+
-
-> Paper 26.2's API is compiled for Java 25, so both the server and the build need Java 25 or newer.
+- **Running the server:** whatever your Minecraft version needs. That is Java 21+ for 1.21.x and Java 25+ for 26.x.
+- **Building from source:** JDK 25+ (the build reads the MultiCurrency API, which is Java 25 bytecode). The jar it produces runs on Java 21.
 
 ## 💰 Economy & Currency Support
 

@@ -148,7 +148,7 @@ public final class CommandItemUtil
             }
         };
 
-        if (Bukkit.isGlobalTickThread())
+        if (SchedulerUtil.IsGlobalThread())
             run.run();
         else
             SchedulerUtil.runGlobal(run);

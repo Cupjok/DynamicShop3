@@ -24,6 +24,49 @@ public final class SchedulerUtil
 
     private static final long MS_PER_TICK = 50L;
 
+    // Bukkit.isGlobalTickThread() is not in the 1.21 API. Looked up once; without it the global thread is the main thread.
+    private static final java.lang.reflect.Method IS_GLOBAL_TICK_THREAD = FindIsGlobalTickThread();
+
+    private static java.lang.reflect.Method FindIsGlobalTickThread()
+    {
+        try
+        {
+            return Bukkit.class.getMethod("isGlobalTickThread");
+        }
+        catch (NoSuchMethodException e)
+        {
+            return null;
+        }
+    }
+
+    /** True on the thread that runs global-region tasks (the main thread on Paper/Purpur). */
+    public static boolean IsGlobalThread()
+    {
+        if (IS_GLOBAL_TICK_THREAD != null)
+        {
+            try
+            {
+                return (boolean) IS_GLOBAL_TICK_THREAD.invoke(null);
+            }
+            catch (ReflectiveOperationException ignored)
+            {
+            }
+        }
+        return Bukkit.isPrimaryThread();
+    }
+
+    /**
+     * Runs a console command. Folia only allows console commands on the global thread ("Dispatching command async"),
+     * so from a player/region thread the command is moved there. On Paper/Purpur it runs immediately, as before.
+     */
+    public static void DispatchConsoleCommand(String command)
+    {
+        if (IsGlobalThread())
+            Bukkit.dispatchCommand(Bukkit.getConsoleSender(), command);
+        else
+            runGlobal(() -> Bukkit.dispatchCommand(Bukkit.getConsoleSender(), command));
+    }
+
     // ---------------- Global (no specific location/entity) ----------------
 
     public static ScheduledTask runGlobal(Runnable task)

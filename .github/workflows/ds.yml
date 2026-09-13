@@ -24,6 +24,17 @@ jobs:
     - name: Build with Maven
       run: mvn -B clean package
     - run: mkdir staging && cp target/DynamicShop-*.jar staging
+    # The jar is built against the 1.21 API. These two checks make sure it still links on newer servers.
+    - name: Compile against the newest API
+      run: mvn -B -q -Pcompat-26 compile
+    - name: Check API compatibility (1.21 -> newest)
+      run: |
+        for v in 1.21-R0.1-SNAPSHOT 1.21.1-R0.1-SNAPSHOT 1.21.4-R0.1-SNAPSHOT 1.21.8-R0.1-SNAPSHOT 1.21.11-R0.1-SNAPSHOT 26.2.build.121-stable; do
+          mvn -B -q dependency:copy -Dartifact=io.papermc.paper:paper-api:$v -DoutputDirectory=api -Dmdep.stripVersion=false
+          mv api/paper-api-*.jar "api/$v.jar" 2>/dev/null || true
+        done
+        ls api
+        python3 tools/api-kind-check.py staging/DynamicShop-*.jar api/1.21-R0.1-SNAPSHOT.jar api/1.21.1-R0.1-SNAPSHOT.jar api/1.21.4-R0.1-SNAPSHOT.jar api/1.21.8-R0.1-SNAPSHOT.jar api/1.21.11-R0.1-SNAPSHOT.jar api/26.2.build.121-stable.jar
     - uses: actions/upload-artifact@v4 #https://github.com/actions/upload-artifact/releases
       with:
         name: Package

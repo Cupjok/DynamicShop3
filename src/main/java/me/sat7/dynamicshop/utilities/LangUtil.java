@@ -1152,7 +1152,7 @@ public final class LangUtil
                         finalString.append(",");
                 }
 
-                Bukkit.dispatchCommand(Bukkit.getConsoleSender(), "tellraw " + player.getName() + " [" + finalString + "]");
+                SendJson(player, "[" + finalString + "]");
             }
             else
             {
@@ -1169,13 +1169,21 @@ public final class LangUtil
                 replacement = replacement + "},\"";
 
                 String msg = message.replace("<item>", replacement);
-                Bukkit.dispatchCommand(Bukkit.getConsoleSender(), "tellraw " + player.getName() + " [\"" + msg + "\"]");
+                SendJson(player, "[\"" + msg + "\"]");
             }
 
             return true;
         } else {
             return false;
         }
+    }
+
+    // Sends a tellraw-style JSON component array straight to the player. Dispatching "tellraw" from the console only
+    // works on the global thread on Folia ("Dispatching command async"); sendMessage is safe from the player's thread.
+    private static void SendJson(Player player, String jsonArray)
+    {
+        player.sendMessage(net.kyori.adventure.text.serializer.gson.GsonComponentSerializer.gson()
+                .deserialize("{\"text\":\"\",\"extra\":" + jsonArray + "}"));
     }
 
     private static void ReloadNumberFormat()

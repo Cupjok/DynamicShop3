@@ -22,9 +22,14 @@ mvn test                 # unit tests (src/test/java) — JUnit 4
 
 Requires network access on first build (Paper/JitPack/etc. repositories are not mirrored locally).
 
-**Requires a JDK 25+ toolchain to build** (`maven.compiler.release` is `25`, since Paper 26.2's `paper-api` jar itself is compiled to Java 25 class files — building with an older JDK fails with `bad class file ... wrong version`). If the default `java`/`JAVA_HOME` on your machine is older, point Maven at one explicitly.
+**One jar supports Minecraft 1.21 through 26.x.** It is compiled with `maven.compiler.release` `21` against `paper-api` `1.21-R0.1-SNAPSHOT` (`paper.api.version` in `pom.xml`). Do not raise either for a new feature. Code must only use API that exists in 1.21 and still exists in the newest version. When a newer API is needed, look it up through reflection with a 1.21 fallback (example: `SchedulerUtil.IsGlobalThread`).
 
-Running the built plugin on a server requires a JDK capable of running Java 25 bytecode (25+), consistent with the Paper 26.2 runtime requirement.
+**Requires a JDK 25+ toolchain to build.** The vendored MultiCurrency API jar is Java 25 bytecode, and only a JDK 25+ `javac` can read it. `--release 21` still produces Java 21 class files. JDK 21 fails with `cannot access me.cupjok.multicurrency.api...`.
+
+Checks for every change that touches the Bukkit/Paper API:
+- `mvn -Pcompat-26 compile` compiles the same sources against the 26.2 API and catches APIs removed after 1.21.
+- `python3 tools/api-kind-check.py target/DynamicShop-<v>.jar <paper-api-1.21.jar> <newer paper-api jars...>` lists API types the jar calls methods on whose kind changed (class ↔ interface, enum → interface), plus members missing in a newer API. Example: `org.bukkit.Sound` is an enum up to 1.21.1 and an interface from 1.21.3. So never call methods on it (`Sound.valueOf`, `name()`, `values()`). Use `SoundUtil.GetSound(name)` or a constant field such as `Sound.ENTITY_EXPERIENCE_ORB_PICKUP`. The same applies to other registry types (`Biome`, `Particle`, `Attribute`, `Enchantment`, `PotionEffectType`, ...).
+- Load-test on real servers (see "Test servers").
 
 If Lombok-generated getters/setters appear missing after `mvn clean`, check that Maven is not running offline and that the compiler has explicit Lombok annotation processing enabled. Do not remove the Lombok `annotationProcessorPaths` block from `pom.xml`; keep its version synchronized with the Lombok dependency.
 
@@ -34,7 +39,7 @@ CI: `.github/workflows/ds.yml` builds on push/PR to `master` and on tags. A tag 
 
 ## Runtime target
 
-- Minecraft/Paper API: tracks current Paper releases (`paper-api` version in `pom.xml`, e.g. `26.2.build.121-stable`). Bump this and `api-version` in `plugin.yml` together when targeting a new MC version.
+- Minecraft/Paper API: compiled against the **oldest** supported version (1.21), `api-version: '1.21'` in `plugin.yml`. Newer servers load it too. Do not bump either when a new Minecraft version comes out. Instead, run the `compat-26` compile (update its `paper.api.version` to the newest API), the API-kind check and the server test matrix against the new version. Dropping 1.21 support is a data/behaviour-impacting decision for the maintainer.
 - Supported server software: **Paper, Purpur, and Folia** (`folia-supported: true` in `plugin.yml`).
 - Folia requires scheduling through the region/entity/global/async schedulers — see "Folia scheduling rules" below. Do not reintroduce `Bukkit.getScheduler()` / `BukkitRunnable` / `BukkitTask`.
 
@@ -102,6 +107,9 @@ Use `utilities/SchedulerUtil.java` instead of the legacy Bukkit scheduler anywhe
 - A specific block/shop location → `runAtLocation*`.
 - A specific player's inventory/GUI/chat state → `runForEntity`.
 
+- Console commands (`Bukkit.dispatchCommand(Bukkit.getConsoleSender(), …)`) → `SchedulerUtil.DispatchConsoleCommand`. Folia throws `Dispatching command async` for a console command off the global thread, for example from a GUI click or a player command.
+- Chat messages with components → `player.sendMessage(Component)`. Never send them through a console `tellraw` command.
+
 On Paper/Purpur these wrappers behave appropriately as well, so call sites should not add `isFolia()` branching. Do not use `Bukkit.getScheduler()` for new work.
 
 ## User data safety (mandatory for every change)
@@ -142,6 +150,8 @@ If a release needs a polished human-written summary, it may be drafted in the lo
 ## Test servers (local dev machine only, not part of this repo)
 
 If similar local test servers exist, each typically has its own `plugins/` folder. Drop the built jar in, start the server using its own startup script, and check the latest console log for enable/disable errors. Testing against a realistic plugin set is a better signal than a bare-bones instance, especially for Vault-hook and Folia-scheduler changes.
+
+**Version matrix (every release, and every change that touches the Bukkit/Paper API):** `tools/compat-matrix/` boots one throwaway server per server jar. It installs VaultUnlocked plus a test-only in-memory economy (`testeco/`, build with `testeco/build.sh`), then runs `createshop`/`add`/`enable`/`reload` from the console, stops the server and grades the log (`grade.sh`). See the header of `run-matrix.sh` for the folder layout. Server jars come from `https://fill.papermc.io/v3/projects/{paper,folia}/versions/<v>/builds/latest` and `https://api.purpurmc.org/v2/purpur/<v>/latest/download`. Cover at least the first and last build of each supported line: 1.21, 1.21.1, 1.21.4 (first with `Sound` as an interface), 1.21.11, 26.1.x, 26.2, plus Folia and Purpur. The matrix does not open GUIs (no player). GUI changes still need an in-game or bot test.
 
 ## Where to look for more detail
 

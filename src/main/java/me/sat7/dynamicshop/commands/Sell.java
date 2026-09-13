@@ -111,7 +111,7 @@ public class Sell implements CommandExecutor
             }
             else
             {
-                player.playSound(player.getLocation(), Sound.valueOf("ENTITY_EXPERIENCE_ORB_PICKUP"), 1, 1);
+                player.playSound(player.getLocation(), Sound.ENTITY_EXPERIENCE_ORB_PICKUP, 1, 1);
             }
 
             return true;

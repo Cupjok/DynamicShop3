@@ -26,7 +26,7 @@ public final class CreateShop extends DSCMD
     public void SendHelpMessage(Player player)
     {
         player.sendMessage(DynamicShop.dsPrefix(player) + t(player, "HELP.TITLE").replace("{command}", "createshop"));
-        player.sendMessage(" - " + t(player, "HELP.USAGE") + ": /ds create <shopname> [<permission>]");
+        player.sendMessage(" - " + t(player, "HELP.USAGE") + ": /ds createshop <shopname> [<permission>]");
         player.sendMessage(" - " + t(player, "HELP.CREATE_SHOP_2"));
 
         player.sendMessage("");

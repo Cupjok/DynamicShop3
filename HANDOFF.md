@@ -2,6 +2,31 @@
 
 Living session-continuity notes. Read `CLAUDE.md` first for the durable architecture reference — this file is the "what's actually going on right now" doc. Update it whenever you leave work mid-flight; trim it once things fully land and are verified (don't let it grow forever as a changelog — that's what git history / README are for).
 
+## Session 2026-09-13 (3): one jar for Minecraft 1.21 – 26.2 (3.122.0, tested, not committed)
+
+- Result, `tools/compat-matrix` with the GUI bot (join, shop GUI, trade view, buy 1, sell 1, `/sell all` keeps
+  bedrock, start page): **PASS** on Paper 1.21, 1.21.1, 1.21.3–1.21.11, 26.1.1, 26.1.2, 26.2; Purpur 1.21.1, 1.21.11,
+  26.1.2; Folia 1.21.4, 1.21.11, 26.1.2, 26.2. The final Folia fix was retested on all Folia rows + Paper 1.21 and 26.2.
+- Folia bug found by the bot (older than this work, also on Folia 26.2): `LangUtil.sendMessageWithLocalizedItemName`
+  sent a console `tellraw`, and `RunBuyCommand`/`RunSellCommand` dispatched console commands from the player's
+  region thread → `IllegalStateException: Dispatching command async` on every GUI buy/sell and `/sell`. Now
+  `SendJson` (Adventure `GsonComponentSerializer` → `player.sendMessage`) and `SchedulerUtil.DispatchConsoleCommand`.
+- Release notes draft kept outside the repo (scratchpad), per CLAUDE.md.
+
+- Goal (user): support 1.21.x through 26.2+ and test every version on self-made servers.
+- Build: `maven.compiler.release` 21, `paper-api` `1.21-R0.1-SNAPSHOT` (property `paper.api.version`),
+  `api-version: '1.21'`. Still needs a JDK 25+ to build (the MultiCurrency API jar is Java 25 bytecode; JDK 26
+  `javac --release 21` reads it fine). Output class files are major 65 (Java 21).
+- API fixes for 1.21: `Bukkit.isGlobalTickThread()` (not in 1.21) → `SchedulerUtil.IsGlobalThread()` (reflection,
+  falls back to `isPrimaryThread`). `Sound.valueOf` (enum ≤ 1.21.1, interface ≥ 1.21.3, so the compiled call only
+  links on one side) → `SoundUtil.GetSound` (reflection) / constant fields.
+- Checks: `mvn -Pcompat-26 compile` (sources vs the 26.2 API), `tools/api-kind-check.py` (bytecode: kind changes of
+  called API types + missing members, 1.21 → 26.2: 0 problems). Both added to CI (`ds.yml`), commands verified locally.
+- Server matrix: `tools/compat-matrix/` (see CLAUDE.md "Test servers"). Local work dir with the downloaded server
+  jars: `DS compat/` next to the other test servers (outside the repo). Jars: Paper 1.21, 1.21.1, 1.21.3–1.21.11,
+  26.1.1, 26.1.2, 26.2; Folia 1.21.4, 1.21.11, 26.1.2, 26.2; Purpur 1.21.1, 1.21.11, 26.1.2.
+- Also: `/ds createshop` help text said `/ds create` (an unknown subcommand, silently ignored).
+
 ## Session 2026-09-13 (later): `/sell all` took items for 0 (not committed; user tested in-game: works)
 
 - Report: `/sell all` removed items and paid 0. Cause found in code: a sell price of 0 is clamped to `valueMin`

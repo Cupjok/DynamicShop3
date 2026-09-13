@@ -6,7 +6,7 @@
 
     <groupId>me.sat7</groupId>
     <artifactId>DynamicShop</artifactId>
-    <version>3.121.1</version>
+    <version>3.122.0</version>
     <packaging>jar</packaging>
 
     <name>DynamicShop</name>
@@ -14,10 +14,11 @@
     <description>Full GUI shop with dynamic prices</description>
     <properties>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-        <!-- Paper 26.2's paper-api jar is compiled to Java 25 class files (major version 69);
-             a lower release here makes javac refuse to link against it ("bad class file ...
-             wrong version"). Build with a JDK 25+ toolchain. -->
-        <maven.compiler.release>25</maven.compiler.release>
+        <!-- The jar targets Java 21 and the Minecraft 1.21 API, so one build loads on every server from
+             1.21 up to 26.x. Newer APIs are only reached through version-neutral calls (see VersionUtil).
+             -Pcompat-26 compiles the same sources against the newest API as a removed-API check. -->
+        <maven.compiler.release>21</maven.compiler.release>
+        <paper.api.version>1.21-R0.1-SNAPSHOT</paper.api.version>
     </properties>
 
     <build>
@@ -128,7 +129,7 @@
         <dependency>
             <groupId>io.papermc.paper</groupId>
             <artifactId>paper-api</artifactId>
-            <version>26.2.build.121-stable</version>
+            <version>${paper.api.version}</version>
             <scope>provided</scope>
         </dependency>
         <dependency>
@@ -203,4 +204,15 @@
             <scope>provided</scope>
         </dependency>
     </dependencies>
+
+    <profiles>
+        <!-- mvn -Pcompat-26 compile : the same sources against the newest API (still Java 21 bytecode) to catch
+             APIs removed after 1.21. The released jar is always built against the 1.21 API. -->
+        <profile>
+            <id>compat-26</id>
+            <properties>
+                <paper.api.version>26.2.build.121-stable</paper.api.version>
+            </properties>
+        </profile>
+    </profiles>
 </project>

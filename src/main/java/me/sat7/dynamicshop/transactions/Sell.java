@@ -154,7 +154,7 @@ public final class Sell
 
             // 플레이어에게 소리 재생
             if (playSound)
-                player.playSound(player.getLocation(), Sound.valueOf("ENTITY_EXPERIENCE_ORB_PICKUP"), 1, 1);
+                player.playSound(player.getLocation(), Sound.ENTITY_EXPERIENCE_ORB_PICKUP, 1, 1);
         }
 
         // 상점 계좌 잔액 수정
@@ -472,7 +472,7 @@ public final class Sell
                             .replace("{amount}", String.valueOf(actualAmount))
                             .replace("{priceSum}", String.valueOf(priceSum))
                             .replace("{tax}", String.valueOf(tax));
-                    Bukkit.dispatchCommand(Bukkit.getConsoleSender(), sellCmd);
+                    SchedulerUtil.DispatchConsoleCommand(sellCmd);
                 }
             }
         }

@@ -16,12 +16,19 @@ public final class SoundUtil
 
     }
 
+    // Sound is an enum up to 1.21.1 and an interface from 1.21.3. A compiled Sound.valueOf() call only links on one of
+    // them, so the name is looked up through reflection, which works on both.
+    public static Sound GetSound(String name) throws ReflectiveOperationException
+    {
+        return (Sound) Sound.class.getMethod("valueOf", String.class).invoke(null, name);
+    }
+
     // 소리 재생
     public static void playerSoundEffect(Player player, String key)
     {
         try
         {
-            player.playSound(player.getLocation(), Sound.valueOf(ccSound.get().getString(key)), 1, 1);
+            player.playSound(player.getLocation(), GetSound(ccSound.get().getString(key)), 1, 1);
         } catch (Exception e)
         {
             if (ccSound.get().contains(key))

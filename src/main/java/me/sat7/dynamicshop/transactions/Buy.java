@@ -293,7 +293,7 @@ public final class Buy
                             .replace("{itemType}", tempIS.getType().toString())
                             .replace("{amount}", String.valueOf(actualAmount))
                             .replace("{priceSum}", String.valueOf(priceSum));
-                    Bukkit.dispatchCommand(Bukkit.getConsoleSender(), buyCmd);
+                    SchedulerUtil.DispatchConsoleCommand(buyCmd);
                 }
             }
         }
