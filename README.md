@@ -95,19 +95,72 @@ not given. Command items cannot be sold to the shop. Price, stock, discounts and
 
 ## 🎮 Commands
 
-| Command | Alias | Description |
-|---|---|---|
-| `/DynamicShop` | `/ds` | Open the DynamicShop GUI |
-| `/shop` | — | Open the shop menu |
-| `/sell` | — | Sell items |
+Main command `/dynamicshop`, alias `/ds`. Every `/ds shop <shop> …` command also works from the console.
+
+**Players**
+
+| Command | Description |
+|---|---|
+| `/ds` | Open the start page (or the default shop) |
+| `/ds shop [<shop>]` | Open a shop |
+| `/shop [<shop>]` | Same as `/ds shop` (if `Command.UseShopCommand` is on) |
+| `/ds qsell` | Quick sell menu |
+| `/sell hand` | Sell the stack in your hand |
+| `/sell handall` | Sell every item like the one in your hand |
+| `/sell all` | Sell everything a shop buys. Other items stay, and nothing is ever sold for 0 |
+
+If another plugin also owns `/sell`, use `/dynamicshop:sell all`.
+
+**Admins**
+
+| Command | Description |
+|---|---|
+| `/ds createshop <shop> [<permission>]` | Create a shop (created disabled) |
+| `/ds deleteshop <shop>` | Delete a shop |
+| `/ds renameshop <old name> <new name>` | Rename a shop |
+| `/ds copyshop <shop> <new name>` | Copy a shop |
+| `/ds mergeshop <shop1> <shop2>` | Merge two shops |
+| `/ds openshop [<shop>] <player>` | Open a shop for another player |
+| `/ds setdefaultshop <shop>` | Set the default shop |
+| `/ds settax <value>` / `/ds settax temp <value> <minutes>` | Global sales tax in %, or a temporary one |
+| `/ds reload` | Reload files |
+| `/ds iteminfo` | Price information for the item in your hand |
+| `/ds deleteOldUser <days>` | Remove old player data |
+| `/ds cmdHelp <on \| off>` | Show command help while typing |
+| `/ds shop <shop> add <item> <value> <median> <stock>` | Add an item by material name (a longer form also takes min/max value) |
+| `/ds shop <shop> addhand <value> <median> <stock>` | Add the item in your hand, with its full item data |
+| `/ds shop <shop> edit …` / `editall …` | Edit one item / all items |
+| `/ds shop <shop> enable <true \| false>` | Enable or disable a shop |
+| `/ds shop <shop> currency \| permission \| flag \| sellbuy \| shophours \| fluctuation \| stockStabilizing \| account \| log \| command \| position \| maxpage \| background …` | Shop settings |
+
+Every setting is also available in the GUI. The full syntax is on the [Commands wiki page](https://github.com/Cupjok/DynamicShop3/wiki/Commands).
 
 ## 🔐 Permissions
 
 | Permission | Default | Description |
 |---|---|---|
-| `dshop.use` | `true` | Allows use of `/ds` |
-| `dshop.sell` | `true` | Allows use of `/sell` |
-| `dshop.use.qsell` | `true` | Allows use of `/ds qsell` |
+| `dshop.use` | `true` | `/ds`, opening shops |
+| `dshop.sell` | `true` | `/sell hand`, `/sell handall`, `/sell all` |
+| `dshop.use.qsell` | `true` | `/ds qsell` quick sell menu |
+| `dshop.admin.shopedit` | op | Edit shops: add/move items, item and shop settings, `/ds shop <shop> …` edit commands |
+| `dshop.admin.createshop` | op | `/ds createshop` |
+| `dshop.admin.deleteshop` | op | `/ds deleteshop` |
+| `dshop.admin.renameshop` | op | `/ds renameshop` |
+| `dshop.admin.copyshop` | op | `/ds copyshop` |
+| `dshop.admin.mergeshop` | op | `/ds mergeshop` |
+| `dshop.admin.editall` | op | `/ds shop <shop> editall` |
+| `dshop.admin.openshop` | op | `/ds openshop` |
+| `dshop.admin.setdefaultshop` | op | `/ds setdefaultshop` |
+| `dshop.admin.settax` | op | `/ds settax` |
+| `dshop.admin.reload` | op | `/ds reload` |
+| `dshop.admin.iteminfo` | op | `/ds iteminfo` |
+| `dshop.admin.deleteOldUser` | op | `/ds deleteOldUser` |
+| `dshop.admin.createsign` | op | Create shop signs |
+| `dshop.admin.destroysign` | op | Break shop signs |
+| `dshop.admin.remoteaccess` | op | Use local/sign shops from anywhere |
+| `dshop.admin.creative` | op | Use shops in creative mode |
+
+A shop can also require its own permission (`/ds shop <shop> permission true` → `dshop.user.shop.<shop>`). A player with only `<permission>.sell` can still sell to that shop through `/sell` and quick sell.
 
 ## 🛠️ Installation
 
