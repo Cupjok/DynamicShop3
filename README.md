@@ -31,6 +31,68 @@
 - 🔒 **Safe data files** — Files are saved atomically, and a YAML file with a typo is backed up and never overwritten
 - 🔁 **Upgrade-safe settings** — Updates add new options and refresh untouched default texts automatically, without resetting your own changes
 
+## 📸 Showcase
+
+Screenshots from a real Purpur 26.2 server running DynamicShop 3.122.0.
+
+<table>
+  <tr>
+    <td align="center" width="50%">
+      <img src="docs/images/start-page.png" alt="Start page with gradient button names and coloured lore"><br>
+      <b>Start page</b><br>
+      Buttons with gradient names and coloured lore
+    </td>
+    <td align="center" width="50%">
+      <img src="docs/images/shop-item-tooltip.png" alt="Shop page with live buy and sell prices"><br>
+      <b>Shop</b><br>
+      Live buy/sell prices and stock on every item
+    </td>
+  </tr>
+  <tr>
+    <td align="center" colspan="2">
+      <img src="docs/images/price-change.png" alt="Diamond price before trading, after players sold 48 and after players bought 160"><br>
+      <b>Dynamic pricing</b><br>
+      Real trades on the test server: selling adds stock and lowers the price, buying removes stock and raises it
+    </td>
+  </tr>
+  <tr>
+    <td align="center">
+      <img src="docs/images/trade.png" alt="Trade screen with buy and sell quantities"><br>
+      <b>Trade</b><br>
+      Buy or sell 1 to 64 at a time, priced by supply and demand
+    </td>
+    <td align="center">
+      <img src="docs/images/quick-sell.png" alt="Quick sell screen"><br>
+      <b>Quick sell</b><br>
+      Sell every item of a type, or one stack, with one click
+    </td>
+  </tr>
+  <tr>
+    <td align="center">
+      <img src="docs/images/add-item-picker.png" alt="Picking an item to add to the shop"><br>
+      <b>Add items from your inventory</b><br>
+      Click an empty slot, then click any item
+    </td>
+    <td align="center">
+      <img src="docs/images/item-settings.png" alt="Item settings editor"><br>
+      <b>Item settings</b><br>
+      Prices, median, stock and trade limits, all in the GUI
+    </td>
+  </tr>
+  <tr>
+    <td align="center">
+      <img src="docs/images/shop-settings.png" alt="Shop settings screen"><br>
+      <b>Shop settings</b><br>
+      Permissions, hours, fluctuation, flags, currency, tax and logs
+    </td>
+    <td align="center">
+      <img src="docs/images/currency-selector.png" alt="Currency selector listing MultiCurrency currencies"><br>
+      <b>Currency selector</b><br>
+      Vault, XP, Jobs points, PlayerPoints or any MultiCurrency currency
+    </td>
+  </tr>
+</table>
+
 ## 🎮 Supported Platforms
 
 | Platform | Support |
