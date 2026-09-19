@@ -76,6 +76,14 @@ public final class DynaShopAPI
         UIManager.Open(player, inventory, uiClass);
     }
 
+    // 랜덤 가격 설정 화면
+    public static void openRandomPriceSettingGui(Player player, String shopName)
+    {
+        RandomPriceSettings uiClass = new RandomPriceSettings();
+        Inventory inventory = uiClass.getGui(player, shopName);
+        UIManager.Open(player, inventory, uiClass);
+    }
+
     // 상점 로테이트 편집기
     public static void OpenRotationEditor(Player player, String shopName)
     {

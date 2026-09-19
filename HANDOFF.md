@@ -2,6 +2,35 @@
 
 Living session-continuity notes. Read `CLAUDE.md` first for the durable architecture reference — this file is the "what's actually going on right now" doc. Update it whenever you leave work mid-flight; trim it once things fully land and are verified (don't let it grow forever as a changelog — that's what git history / README are for).
 
+## Session 2026-09-19: random price per shop (3.123.0, tested in-game, released)
+
+- Feature: a shop can apply a random percent on top of its prices, rerolled on a wall-clock (machine time) schedule.
+- Data (all new keys, default off, no existing key renamed or reinterpreted):
+  `Options.randomPrice.{enable,target,min,max}` and `Options.randomPrice.timer.{enable,period,hour,minute,dayOfWeek,dayOfMonth,next}`,
+  plus per item `<idx>.randomPrice.buy` / `<idx>.randomPrice.sell` (percent). `target` is `BUY`, `SELL` or `BOTH`;
+  `period` is `DAILY`, `WEEKLY` or `MONTHLY`. `timer.next` is epoch milliseconds.
+- `utilities/RandomPriceUtil`: roll, schedule (`ComputeNextReset` is pure and unit tested), `Tick()` runs once a second
+  from `DynamicShop.RepeatAction`.
+- `transactions/Calc`: the percent is applied after the discount and before the tax, in `getCurrentPrice` and
+  `calcTotalCost`, so every buy/sell path uses the same number. Re-clamped to `valueMin` only, so a roll can exceed
+  `valueMax`. **Money-farming guard:** while the feature is on, a sell price/total is capped at the buy price/total.
+  The cap is skipped when the feature is off, so existing shops with `value2` > `value` behave as before.
+- GUI: shop settings slot 5 opens `guis/RandomPriceSettings` (enable, target, min, max, reroll now, schedule toggle,
+  period, hour, minute, weekday / day of month, next reset). New `UI_TYPE.RandomPriceSettings`.
+- Item lore: the normal price is shown under the current one (`RANDOM_PRICE.BASE_BUY` / `BASE_SELL`). The arrow and
+  percent are left to the existing `showValueChange` flag (they already include the roll) instead of being printed twice.
+- Fixed an upstream bug found while testing: the sell line's `showValueChange` arrow/percent was computed from the
+  *buy* price. It now compares `sellPrice` with its own base (`value2`, or `value` minus the sales tax, floored when
+  `integerOnly`), via the new `Shop.GetSellBaseValue`. The tax that was taken off is printed next to it
+  (`SHOP.SELL_TAX_INFO`, e.g. `§7(-tax 25%)`). Display only — prices did not change.
+- Admin command `/ds shop <shop> resetRandomPrice` (`commands/shop/ResetRandomPrice`, `P_ADMIN_SHOP_EDIT`), in tab complete.
+- Lang keys `RANDOM_PRICE.*` and `SHOP.SELL_TAX_INFO` in ko-KR and en-US.
+- Checks: `mvn clean verify` green (62 tests; new `RandomPriceUtilTest` 7, `CalcRandomPriceTest` 4).
+  `mvn -Pcompat-26 compile` green. `tools/api-kind-check.py` against paper-api 1.21, 1.21.4 and 26.2: 361 references to
+  75 API types, 0 problems. Loaded and tested by the maintainer in-game on the local Purpur 26.2 test server.
+- Not run for this release: `tools/compat-matrix` (the full server matrix). The change touches no new Bukkit API
+  (only `Material` constants, `ConfigurationSection`, `FileConfiguration`, `java.time`).
+
 ## Session 2026-09-13 (3): one jar for Minecraft 1.21 – 26.2 (3.122.0, tested, not committed)
 
 - Result, `tools/compat-matrix` with the GUI bot (join, shop GUI, trade view, buy 1, sell 1, `/sell all` keeps

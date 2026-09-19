@@ -131,6 +131,23 @@ DynamicShop3 can adjust prices based on shop activity, including buying, selling
 
 This allows servers to create economies where item prices naturally change over time.
 
+### Random price (daily / weekly / monthly)
+
+A shop can roll a random percent on top of its prices, so today's price differs from the normal one.
+
+- Set a **min** and **max** percent (negative values make items cheaper).
+- Choose whether it applies to **buy**, **sell**, or **both**.
+- Reroll on a schedule — **daily**, **weekly** (pick a weekday) or **monthly** (pick a day of the month), at an exact hour and minute of the server clock. The schedule can be switched on and off on its own.
+- Items show today's price with the change, and the normal price underneath:
+
+```
+Buy: 55 §a⬆10%
+Normal buy: 50
+```
+
+- Admins can reroll any time with `/ds shop <shop> resetRandomPrice` or the button in the GUI (Shop settings → Random price).
+- **A random roll can never make selling more profitable than buying.** While the feature is on, a sell price is capped at the buy price, so nobody can farm money by buying and selling the same item.
+
 ## 🎨 Modern Text & Colors
 
 Shop titles, the start page, buttons, names, and lore support modern formatting, including:
@@ -194,6 +211,7 @@ If another plugin also owns `/sell`, use `/dynamicshop:sell all`.
 | `/ds shop <shop> edit …` / `editall …` | Edit one item / all items |
 | `/ds shop <shop> enable <true \| false>` | Enable or disable a shop |
 | `/ds shop <shop> currency \| permission \| flag \| sellbuy \| shophours \| fluctuation \| stockStabilizing \| account \| log \| command \| position \| maxpage \| background …` | Shop settings |
+| `/ds shop <shop> resetRandomPrice` | Roll new random prices for that shop |
 
 Every setting is also available in the GUI. The full syntax is on the [Commands wiki page](https://github.com/Cupjok/DynamicShop3/wiki/Commands).
 
@@ -246,6 +264,7 @@ Updating is always **replace the jar and restart**. You never need to delete `co
 Things that behave differently from the original:
 
 - **Quick sell:** left-click sells **all** items of that type, Shift + left-click sells only the clicked stack. The guide text in the menu is updated automatically.
+- **`showValueChange` now reports the real sell change.** The original computed the arrow and percent on the sell line from the *buy* price, so a shop with a separate sell value or a sales tax showed a number that did not belong to that line. The sell line is now compared against its own base price, and the sales tax taken off is shown next to it, e.g. `§7(-tax 25%)`. Prices themselves are unchanged.
 - **`/sell all`, `/sell hand` and quick sell never take items for nothing.** The original removed items whose sell payout rounded to 0 (for example a sell price set to 0, or a delivery charge larger than the price) and paid 0. These items are now refused and stay in the inventory.
 - Everything in the ✨ Features list above applies to your existing shops right away.
 

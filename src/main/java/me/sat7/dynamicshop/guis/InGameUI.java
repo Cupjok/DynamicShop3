@@ -33,7 +33,8 @@ public class InGameUI
         StockSimulator,
         RotationEditor,
         CurrencySelector,
-        CommandItemEditor
+        CommandItemEditor,
+        RandomPriceSettings
     }
 
     public UI_TYPE uiType;

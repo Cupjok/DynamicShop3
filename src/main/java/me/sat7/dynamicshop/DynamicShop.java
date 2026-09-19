@@ -403,6 +403,10 @@ public final class DynamicShop extends JavaPlugin implements Listener
             ShopUtil.randomChange(new Random());
             repeatTaskCount = 0;
         }
+
+        // 랜덤 가격 예약 초기화 (기계 시간 기준)
+        RandomPriceUtil.Tick();
+
         UIManager.RefreshUI();
     }
 

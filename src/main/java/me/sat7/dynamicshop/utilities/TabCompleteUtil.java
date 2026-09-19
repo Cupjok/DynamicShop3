@@ -154,6 +154,7 @@ public final class TabCompleteUtil
                             temp.add("sellbuy");
                             temp.add("log");
                             temp.add("resetTradingVolume");
+                            temp.add("resetRandomPrice");
                             temp.add("background");
                         }
 

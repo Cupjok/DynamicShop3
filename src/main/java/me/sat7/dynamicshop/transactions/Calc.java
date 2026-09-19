@@ -2,6 +2,7 @@ package me.sat7.dynamicshop.transactions;
 
 import me.sat7.dynamicshop.files.CustomConfig;
 import me.sat7.dynamicshop.utilities.ConfigUtil;
+import me.sat7.dynamicshop.utilities.RandomPriceUtil;
 import me.sat7.dynamicshop.utilities.ShopUtil;
 import org.bukkit.configuration.file.FileConfiguration;
 
@@ -64,11 +65,32 @@ public final class Calc
             price = price * (100 - discount) / 100;
         }
 
+        // 랜덤 가격 (퍼센트). 기능이 꺼져있거나 대상이 아니면 0%
+        double randomPercent = RandomPriceUtil.GetPercent(data, idx, buy);
+        if (randomPercent != 0)
+        {
+            price = RandomPriceUtil.Apply(price, randomPercent);
+            if (price < min)
+            {
+                price = min;
+            }
+        }
+
         // 판매세 계산 (임의 지정된 판매가치가 없는 경우에만)
         if (!buy && !data.contains(idx + ".value2"))
         {
             double tax = ((price / 100) * getTaxRate(shopName));
             price -= tax;
+        }
+
+        // 랜덤 가격 안전장치: 판매가가 구매가보다 높아지면 무한 돈복사가 되므로 구매가로 제한함.
+        if (!buy && RandomPriceUtil.IsEnabled(data))
+        {
+            double buyPrice = getCurrentPrice(shopName, idx, true, true);
+            if (price > buyPrice)
+            {
+                price = buyPrice;
+            }
         }
 
         if (!raw && data.contains("Options.flag.integeronly"))
@@ -146,12 +168,33 @@ public final class Calc
             total = total * (100 - discount) / 100;
         }
 
+        // 랜덤 가격 (퍼센트)
+        double randomPercent = RandomPriceUtil.GetPercent(data, idx, amount > 0);
+        if (randomPercent != 0)
+        {
+            total = RandomPriceUtil.Apply(total, randomPercent);
+            if (total < 0)
+            {
+                total = 0;
+            }
+        }
+
         // 세금 적용 (판매가 별도지정시 세금계산 안함)
         double tax = 0;
         if (amount < 0 && !data.contains(idx + ".value2"))
         {
             tax = ((total / 100) * getTaxRate(shopName));
             total -= tax;
+        }
+
+        // 랜덤 가격 안전장치 (getCurrentPrice와 동일한 이유)
+        if (amount < 0 && RandomPriceUtil.IsEnabled(data))
+        {
+            double buyTotal = calcTotalCost(shopName, idx, -amount)[0];
+            if (total > buyTotal)
+            {
+                total = buyTotal;
+            }
         }
 
         if (data.contains("Options.flag.integeronly"))

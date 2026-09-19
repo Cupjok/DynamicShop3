@@ -41,6 +41,7 @@ public final class ShopSettings extends InGameUI
     private final int MAX_PAGE = 2;
     private final int BACKGROUND = 3;
     private final int ROTATION_EDITOR = 4;
+    private final int RANDOM_PRICE = 5;
     private final int SHOP_HOUR = 6;
     private final int SHOP_HOUR_OPEN = 7;
     private final int SHOP_HOUR_CLOSE = 8;
@@ -143,6 +144,14 @@ public final class ShopSettings extends InGameUI
         int currentRotation = confSec_Options.getInt("Rotation.Current", -1);
         String rotationString = currentRotation == -1 ? t(player, "ROTATION_EDITOR.DISABLED") : String.valueOf(currentRotation + 1);
         CreateButton(ROTATION_EDITOR, Material.CLOCK, t(player, "SHOP_SETTING.ROTATION_EDITOR") + rotationString, t(player, "SHOP_SETTING.ROTATION_EDITOR_LORE"));
+
+        // 랜덤 가격 버튼
+        boolean randomPriceEnabled = me.sat7.dynamicshop.utilities.RandomPriceUtil.IsEnabled(data.get());
+        ArrayList<String> randomPriceLore = new ArrayList<>(Arrays.asList(
+                t(player, "RANDOM_PRICE.BUTTON_LORE"),
+                "§9" + t(player, "CUR_STATE") + ": " + (randomPriceEnabled ? t(player, "ON") : t(player, "OFF")),
+                "§e" + t(player, "CLICK") + ": " + t(player, "SET")));
+        CreateButton(RANDOM_PRICE, Material.SUNFLOWER, t(player, "RANDOM_PRICE.BUTTON"), randomPriceLore);
 
         // 영업시간 버튼
         int curTime = (int) (player.getWorld().getTime()) / 1000 + 6;
@@ -454,6 +463,11 @@ public final class ShopSettings extends InGameUI
         else if (e.getSlot() == ROTATION_EDITOR)
         {
             DynaShopAPI.OpenRotationEditor(player, shopName);
+        }
+        // 랜덤 가격
+        else if (e.getSlot() == RANDOM_PRICE)
+        {
+            DynaShopAPI.openRandomPriceSettingGui(player, shopName);
         }
         // 영업시간
         else if (e.getSlot() == SHOP_HOUR || e.getSlot() == SHOP_HOUR_OPEN || e.getSlot() == SHOP_HOUR_CLOSE)

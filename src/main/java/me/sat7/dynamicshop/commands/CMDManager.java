@@ -41,6 +41,7 @@ public class CMDManager
     public static Command command;
     public static ItemInfo itemInfo;
     public static ResetTradingVolume resetTradingVolume;
+    public static ResetRandomPrice resetRandomPrice;
     public static Background background;
 
     public static void Init()
@@ -94,6 +95,7 @@ public class CMDManager
         stockStabilizing = new StockStabilizing();
         command = new Command();
         resetTradingVolume = new ResetTradingVolume();
+        resetRandomPrice = new ResetRandomPrice();
         background = new Background();
 
         CMDHashMap.put("account", account);
@@ -115,6 +117,7 @@ public class CMDManager
         CMDHashMap.put("stockstabilizing", stockStabilizing);
         CMDHashMap.put("command", command);
         CMDHashMap.put("resettradingvolume", resetTradingVolume);
+        CMDHashMap.put("resetrandomprice", resetRandomPrice);
         CMDHashMap.put("background", background);
     }
 

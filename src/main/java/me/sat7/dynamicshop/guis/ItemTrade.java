@@ -15,6 +15,7 @@ import me.sat7.dynamicshop.transactions.Sell;
 import me.sat7.dynamicshop.utilities.CommandItemUtil;
 import me.sat7.dynamicshop.utilities.ConfigUtil;
 import me.sat7.dynamicshop.utilities.HashUtil;
+import me.sat7.dynamicshop.utilities.RandomPriceUtil;
 import me.sat7.dynamicshop.utilities.UserUtil;
 import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
@@ -419,6 +420,13 @@ public final class ItemTrade extends InGameUI
                 {
                     priceText = t(player, "TRADE.SELL_PRICE" + currencyKey).replace("{num}", Price(price, isIntTypeCurrency, !sell));
                 }
+
+                // 랜덤 가격
+                if (RandomPriceUtil.GetPercent(shopData, tradeIdx, false) != 0)
+                {
+                    double baseUnit = shopData.contains(tradeIdx + ".value2") ? shopData.getDouble(tradeIdx + ".value2") : shopData.getDouble(tradeIdx + ".value");
+                    priceText += "\n" + t(player, "RANDOM_PRICE.BASE_SELL").replace("{num}", Price(baseUnit * amount, isIntTypeCurrency, !sell));
+                }
             }
             else
             {
@@ -432,6 +440,13 @@ public final class ItemTrade extends InGameUI
                 else
                 {
                     priceText = t(player, "TRADE.PRICE" + currencyKey).replace("{num}", Price(price, isIntTypeCurrency, !sell));
+                }
+
+                // 랜덤 가격
+                if (RandomPriceUtil.GetPercent(shopData, tradeIdx, true) != 0)
+                {
+                    double baseUnit = shopData.getDouble(tradeIdx + ".value");
+                    priceText += "\n" + t(player, "RANDOM_PRICE.BASE_BUY").replace("{num}", Price(baseUnit * amount, isIntTypeCurrency, !sell));
                 }
             }
 

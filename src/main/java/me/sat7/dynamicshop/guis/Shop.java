@@ -103,6 +103,25 @@ public final class Shop extends InGameUI
 
     // MultiCurrency shops show prices in that currency's own format, rounded the way they are charged (buy: up)
     // or paid out (sell: down). Every other currency keeps the existing number format.
+    // 랜덤/재고 변동이 없을 때의 판매가. (판매가 별도지정이 없으면 세금까지 반영)
+    private double GetSellBaseValue(String shopName, String idx)
+    {
+        double base;
+        if (shopData.contains(idx + ".value2"))
+        {
+            base = shopData.getDouble(idx + ".value2");
+        } else
+        {
+            base = shopData.getDouble(idx + ".value");
+            base -= (base / 100) * Calc.getTaxRate(shopName);
+        }
+
+        if (shopData.contains("Options.flag.integeronly"))
+            base = Math.floor(base);
+
+        return base;
+    }
+
     private String Price(double value, boolean isIntTypeCurrency, boolean buy)
     {
         String currency = ShopUtil.GetCurrency(shopData);
@@ -220,20 +239,34 @@ public final class Shop extends InGameUI
                     double priceSave1 = (buyPrice / buyPrice2) - 1;
                     double priceSave2 = 1 - (buyPrice / buyPrice2);
 
+                    // 판매가의 기준값. 판매가는 자기 기준값과 비교해야 화살표가 실제 가격과 맞음.
+                    double sellPrice2 = GetSellBaseValue(shopName, s);
+
                     String valueChanged_Buy;
                     String valueChanged_Sell;
 
                     if (buyPrice - buyPrice2 > 0.005)
                     {
                         valueChanged_Buy = t(player, "ARROW.UP_2") + n(priceSave1 * 100) + "%";
-                        valueChanged_Sell = t(player, "ARROW.UP") + n(priceSave1 * 100) + "%";
                     } else if (buyPrice - buyPrice2 < -0.005)
                     {
                         valueChanged_Buy = t(player, "ARROW.DOWN_2") + n(priceSave2 * 100) + "%";
-                        valueChanged_Sell = t(player, "ARROW.DOWN") + n(priceSave2 * 100) + "%";
                     } else
                     {
                         valueChanged_Buy = "";
+                    }
+
+                    if (sellPrice2 <= 0)
+                    {
+                        valueChanged_Sell = "";
+                    } else if (sellPrice - sellPrice2 > 0.005)
+                    {
+                        valueChanged_Sell = t(player, "ARROW.UP") + n(((sellPrice / sellPrice2) - 1) * 100) + "%";
+                    } else if (sellPrice - sellPrice2 < -0.005)
+                    {
+                        valueChanged_Sell = t(player, "ARROW.DOWN") + n((1 - (sellPrice / sellPrice2)) * 100) + "%";
+                    } else
+                    {
                         valueChanged_Sell = "";
                     }
 
@@ -274,6 +307,13 @@ public final class Shop extends InGameUI
                             buyText = t(player, "SHOP.BUY_PRICE" + currencyKey).replace("{num}", Price(buyPrice, isIntTypeCurrency, true));
                         }
                         buyText += showValueChange ? " " + valueChanged_Buy : "";
+
+                        // 랜덤 가격: 평소 가격을 아래에 보여줌. 변동폭 표시는 showValueChange 플래그가 담당함.
+                        if (RandomPriceUtil.GetPercent(shopData, s, true) != 0)
+                        {
+                            double baseBuy = shopData.getDouble(s + ".value");
+                            buyText += "\n" + t(player, "RANDOM_PRICE.BASE_BUY").replace("{num}", Price(baseBuy, isIntTypeCurrency, true));
+                        }
                     }
 
                     if (!tradeType.equalsIgnoreCase("BuyOnly"))
@@ -289,6 +329,19 @@ public final class Shop extends InGameUI
                         }
                         
                         sellText += showValueChange ? " " + valueChanged_Sell : "";
+
+                        // 판매세는 판매가에서 이미 빠져있으므로, 얼마가 빠졌는지 같이 보여줌.
+                        int sellTaxRate = shopData.contains(s + ".value2") ? 0 : Calc.getTaxRate(shopName);
+                        if (showValueChange && sellTaxRate != 0)
+                        {
+                            sellText += " " + t(player, "SHOP.SELL_TAX_INFO").replace("{num}", n(Math.abs(sellTaxRate))).replace("{sign}", sellTaxRate > 0 ? "-" : "+");
+                        }
+
+                        // 랜덤 가격
+                        if (RandomPriceUtil.GetPercent(shopData, s, false) != 0)
+                        {
+                            sellText += "\n" + t(player, "RANDOM_PRICE.BASE_SELL").replace("{num}", Price(sellPrice2, isIntTypeCurrency, false));
+                        }
                     }
 
                     String pricingTypeText = "";
