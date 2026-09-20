@@ -115,12 +115,43 @@ public final class RandomPriceUtil
     }
 
     // 아이탬 하나의 랜덤 퍼센트. 기능이 꺼져있거나 대상이 아니면 0.
+    // 범위를 좁힌 뒤 아직 다시 뽑지 않은 값이 남아있을 수 있으므로 현재 범위로 제한함.
     public static double GetPercent(FileConfiguration data, String idx, boolean buy)
     {
         if (!AppliesTo(data, buy))
             return 0;
 
-        return data.getDouble(idx + ".randomPrice." + (buy ? "buy" : "sell"), 0);
+        double percent = data.getDouble(idx + ".randomPrice." + (buy ? "buy" : "sell"), 0);
+
+        int min = GetMinPercent(data);
+        int max = GetMaxPercent(data);
+        if (min > max)
+        {
+            int temp = min;
+            min = max;
+            max = temp;
+        }
+
+        return MathUtil.Clamp(percent, min, max);
+    }
+
+    // 새 상품 하나에만 퍼센트를 뽑아줌. 기능이 꺼져있으면 아무것도 하지 않음.
+    public static void RollForItem(FileConfiguration data, String idx)
+    {
+        if (!IsEnabled(data))
+            return;
+
+        int min = GetMinPercent(data);
+        int max = GetMaxPercent(data);
+        if (min > max)
+        {
+            int temp = min;
+            min = max;
+            max = temp;
+        }
+
+        data.set(idx + ".randomPrice.buy", RollPercent(min, max));
+        data.set(idx + ".randomPrice.sell", RollPercent(min, max));
     }
 
     public static double Apply(double price, double percent)

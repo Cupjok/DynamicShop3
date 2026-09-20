@@ -146,7 +146,11 @@ Normal buy: 50
 ```
 
 - Admins can reroll any time with `/ds shop <shop> resetRandomPrice` or the button in the GUI (Shop settings → Random price).
-- **A random roll can never make selling more profitable than buying.** While the feature is on, a sell price is capped at the buy price, so nobody can farm money by buying and selling the same item.
+- Narrowing the min/max applies right away: rolls already stored outside the new range are capped to it, so no price can sit outside the range you show your players.
+- An item added to a shop while the feature is on gets its own roll immediately, instead of showing the normal price until the next reroll.
+- With the integer-only option on, a shop that has items worth less than 1 is named once in the console, because those items always sell for 0 — with or without random price.
+- **The range holds even with whole-number prices.** With the integer-only option on, rounding alone could push a cheap item past the range you set — a 1-coin item rolled at -50% would round down to nothing. The rounded price is kept inside the range instead, so the worst case is no change rather than a free item.
+- **A random roll can never make selling more profitable than buying.** While the feature is on, a sell price is capped at the buy price, so nobody can farm money by buying and selling the same item. Items that cannot be bought from the shop (`SellOnly`) are exempt, because that loop is impossible for them — they keep their own sell value and stay inside the min/max range you set. When the cap does apply, the item's lore says so, instead of leaving players to wonder why the percent looks out of range.
 
 ## 🎨 Modern Text & Colors
 
@@ -257,6 +261,7 @@ Updating is always **replace the jar and restart**. You never need to delete `co
 - Your shops, settings, start page, custom texts and player data are kept.
 - New options are added to your files automatically.
 - Default texts you never changed are refreshed when a new version changes them. Texts you edited yourself are kept, and the console tells you when a newer default exists.
+- A price that was saved as text instead of a number (which the shop would have read as 0) is repaired on start, and the console says which shop and slot it fixed.
 - A data file with a YAML typo is not overwritten. A `.broken-<time>` copy is kept, the console says which file it is, and you can fix it and run `/ds reload`.
 
 **Coming from the original DynamicShop (sat7, up to 3.120.2)?** Drop this jar in place of the old one. It uses the same `plugins/DynamicShop/` folder. A full migration from upstream 3.120.1 data was tested: every shop, flag, price, discount, trade limit, shop account, custom item (name, lore, enchantments), start-page button, config value and custom text was kept, and buying worked the same as before. The original jars do not load on Minecraft 26.x, so switching is required there anyway.

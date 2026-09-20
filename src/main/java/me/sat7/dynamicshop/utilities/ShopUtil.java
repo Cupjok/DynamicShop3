@@ -40,7 +40,113 @@ public final class ShopUtil
         BackwardCompatibility();
         SetupSampleShopFile();
         SortShopDataAll();
+        RepairNumericStrings();
+        WarnAboutUnsellableItems();
     }
+
+    // 정수 가격 상점에서 판매 기준값이 1보다 작으면 내림 때문에 항상 0원이 됨. 가격은 건드리지 않고 알려주기만 함.
+    public static void WarnAboutUnsellableItems()
+    {
+        for (Map.Entry<String, CustomConfig> entry : shopConfigFiles.entrySet())
+        {
+            FileConfiguration data = entry.getValue().get();
+            if (!data.contains("Options.flag.integeronly"))
+                continue;
+
+            StringBuilder items = new StringBuilder();
+            int count = 0;
+
+            for (String idx : data.getKeys(false))
+            {
+                try
+                {
+                    Integer.parseInt(idx); // Options 등은 상품이 아님
+                } catch (Exception e)
+                {
+                    continue;
+                }
+
+                if (!data.contains(idx + ".value"))
+                    continue;
+
+                String tradeType = data.getString(idx + ".tradeType");
+                if (tradeType != null && tradeType.equalsIgnoreCase("BuyOnly"))
+                    continue;
+
+                double sellValue = data.contains(idx + ".value2") ? data.getDouble(idx + ".value2") : data.getDouble(idx + ".value");
+                if (sellValue <= 0 || sellValue >= 1)
+                    continue;
+
+                if (count > 0)
+                    items.append(", ");
+
+                items.append(data.getString(idx + ".mat", "?")).append(" (slot ").append(idx).append(")");
+                count++;
+            }
+
+            if (count > 0)
+            {
+                Log("Shop '" + entry.getKey() + "' uses the integer-only option, so these items always sell for 0: "
+                        + items + ". Raise their sell value to 1 or more, or turn the integer-only option off.");
+            }
+        }
+    }
+
+    // 서버 밖(유닛 테스트)에서도 동작하도록 Bukkit을 직접 보지 않음.
+    private static void Log(String message)
+    {
+        org.bukkit.plugin.Plugin plugin = org.bukkit.Bukkit.getServer() == null ? null : org.bukkit.Bukkit.getPluginManager().getPlugin("DynamicShop");
+        java.util.logging.Logger logger = plugin != null ? plugin.getLogger() : java.util.logging.Logger.getLogger("DynamicShop");
+        logger.warning(message);
+    }
+
+    // 숫자여야 할 값이 문자열로 저장되어 있으면 가격이 조용히 0이 됨. 숫자로 바꿔줌.
+    public static void RepairNumericStrings()
+    {
+        String[] numericKeys = {"value", "value2", "valueMin", "valueMax"};
+
+        for (Map.Entry<String, CustomConfig> entry : shopConfigFiles.entrySet())
+        {
+            FileConfiguration data = entry.getValue().get();
+            boolean changed = false;
+
+            for (String idx : data.getKeys(false))
+            {
+                try
+                {
+                    Integer.parseInt(idx); // Options 등은 상품이 아님
+                } catch (Exception e)
+                {
+                    continue;
+                }
+
+                for (String numericKey : numericKeys)
+                {
+                    Object raw = data.get(idx + "." + numericKey);
+                    if (!(raw instanceof String))
+                        continue;
+
+                    try
+                    {
+                        double parsed = Double.parseDouble(((String) raw).trim());
+                        data.set(idx + "." + numericKey, parsed);
+                        changed = true;
+
+                        Log("Shop '" + entry.getKey() + "' slot " + idx + ": " + numericKey
+                                + " was stored as text and would have been read as 0. Fixed to " + parsed + ".");
+                    } catch (NumberFormatException e)
+                    {
+                        Log("Shop '" + entry.getKey() + "' slot " + idx + ": " + numericKey
+                                + " is not a number (" + raw + "). It is read as 0. Fix it by hand.");
+                    }
+                }
+            }
+
+            if (changed)
+                entry.getValue().save();
+        }
+    }
+
 
     public static void ReloadAllShop()
     {
@@ -371,6 +477,12 @@ public final class ShopUtil
                     data.get().set(idx + ".discount", null);
                 }
 
+                // 랜덤 가격이 켜진 상점에 새로 들어온 상품은 바로 퍼센트를 뽑아줌. 다음 초기화까지 혼자 평소 가격이면 어색함.
+                if (!data.get().contains(idx + ".randomPrice"))
+                {
+                    RandomPriceUtil.RollForItem(data.get(), String.valueOf(idx));
+                }
+
                 if (dsItem.sellLimit != 0 || dsItem.buyLimit != 0)
                 {
                     data.get().set(idx + ".tradeLimitPerPlayer.sell", dsItem.sellLimit);
@@ -395,6 +507,7 @@ public final class ShopUtil
                 data.get().set(idx + ".maxStock", null);
                 data.get().set(idx + ".discount", null);
                 data.get().set(idx + ".tradeLimitPerPlayer", null);
+                data.get().set(idx + ".randomPrice", null);
             }
 
             data.save();

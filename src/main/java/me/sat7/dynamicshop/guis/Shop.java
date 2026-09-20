@@ -341,6 +341,12 @@ public final class Shop extends InGameUI
                         if (RandomPriceUtil.GetPercent(shopData, s, false) != 0)
                         {
                             sellText += "\n" + t(player, "RANDOM_PRICE.BASE_SELL").replace("{num}", Price(sellPrice2, isIntTypeCurrency, false));
+
+                            // 돈복사 안전장치로 깎인 경우, 왜 범위 밖으로 보이는지 알려줌.
+                            if (Calc.IsSellCappedByBuyPrice(shopName, s))
+                            {
+                                sellText += " " + t(player, "RANDOM_PRICE.CAPPED_BY_BUY");
+                            }
                         }
                     }
 

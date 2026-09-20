@@ -373,6 +373,7 @@ public final class LangUtil
             ccLang.get().addDefault("RANDOM_PRICE.WEEKDAY_7", "일요일");
             ccLang.get().addDefault("RANDOM_PRICE.BASE_BUY", "§7평소 구매가: {num}");
             ccLang.get().addDefault("RANDOM_PRICE.BASE_SELL", "§7평소 판매가: {num}");
+            ccLang.get().addDefault("RANDOM_PRICE.CAPPED_BY_BUY", "§7(구매가로 제한됨)");
 
             ccLang.get().addDefault("TIME.OPEN", "Open");
             ccLang.get().addDefault("TIME.CLOSE", "Close");
@@ -918,6 +919,7 @@ public final class LangUtil
             ccLang.get().addDefault("RANDOM_PRICE.WEEKDAY_7", "Sunday");
             ccLang.get().addDefault("RANDOM_PRICE.BASE_BUY", "§7Normal buy: {num}");
             ccLang.get().addDefault("RANDOM_PRICE.BASE_SELL", "§7Normal sell: {num}");
+            ccLang.get().addDefault("RANDOM_PRICE.CAPPED_BY_BUY", "§7(capped at the buy price)");
 
             ccLang.get().addDefault("TIME.OPEN", "Open");
             ccLang.get().addDefault("TIME.CLOSE", "Close");
